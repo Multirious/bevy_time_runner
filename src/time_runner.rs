@@ -50,14 +50,13 @@ impl TimeRunnerElasped {
 #[derive(Debug, Clone, PartialEq, Component, Reflect)]
 #[reflect(Component)]
 pub struct TimeRunner {
-    /// Causes [`AdvancedTimer::tick`] to does nothing.
     paused: bool,
     /// The current elasped time with other useful information.
     elasped: TimeRunnerElasped,
     /// Maximum amount of duration.
     length: Duration,
     /// Ticking direction of the current timer.
-    direction: TimerDirection,
+    direction: TimeDirection,
     /// Time scale for ticking
     time_scale: f32,
     /// Repeat configuration.
@@ -65,7 +64,7 @@ pub struct TimeRunner {
 }
 
 impl TimeRunner {
-    /// Create new [`TweenTimer`] with this duration.
+    /// Create new [`TimeRunner`] with this duration.
     pub fn new(length: Duration) -> TimeRunner {
         TimeRunner {
             length,
@@ -83,7 +82,7 @@ impl TimeRunner {
         self.length
     }
 
-    /// Set time paused
+    /// Pauses the timer.
     pub fn set_paused(&mut self, paused: bool) {
         self.paused = paused;
     }
@@ -104,12 +103,12 @@ impl TimeRunner {
     }
 
     /// Set timer direction
-    pub fn set_direction(&mut self, direction: TimerDirection) {
+    pub fn set_direction(&mut self, direction: TimeDirection) {
         self.direction = direction;
     }
 
     /// Get timer direction
-    pub fn direction(&self) -> TimerDirection {
+    pub fn direction(&self) -> TimeDirection {
         self.direction
     }
 
@@ -133,11 +132,11 @@ impl TimeRunner {
     /// configured repeat is exhausted.
     pub fn is_completed(&self) -> bool {
         let at_edge = match self.direction {
-            TimerDirection::Forward => {
+            TimeDirection::Forward => {
                 self.elasped.now_period >= 1.0
                     && self.elasped.now_period == self.elasped.previous_period
             }
-            TimerDirection::Backward => {
+            TimeDirection::Backward => {
                 self.elasped.now_period <= 0.0 && self.elasped.now == self.elasped.previous
             }
         };
@@ -147,7 +146,7 @@ impl TimeRunner {
         }
     }
 
-    /// Update [`TimerElasped`] by `secs`.
+    /// Update [`TimeRunnerElasped`] by `secs`.
     /// Accounted for `paused`, `time_scale` and if the timer is completed.
     ///
     /// # Panics
@@ -160,7 +159,7 @@ impl TimeRunner {
         self.raw_tick(secs * self.time_scale);
     }
 
-    /// Update [`TimerElasped`] by `secs`.
+    /// Update [`TimeRunnerElasped`] by `secs`.
     /// Doesn't account for `paused`, `time_scale` and if the timer is completed.
     ///
     /// # Panics
@@ -168,7 +167,7 @@ impl TimeRunner {
     /// Panics if `secs` is Nan.
     pub fn raw_tick(&mut self, secs: f32) {
         use RepeatStyle::*;
-        use TimerDirection::*;
+        use TimeDirection::*;
 
         assert!(!secs.is_nan(), "Tick seconds can't be Nan");
 
@@ -186,7 +185,7 @@ impl TimeRunner {
         let repeat_style = 'a: {
             if let Some(r) = self.repeat.as_mut() {
                 if repeat_count != 0 {
-                    let repeat_count = if self.direction == TimerDirection::Forward {
+                    let repeat_count = if self.direction == TimeDirection::Forward {
                         repeat_count
                     } else {
                         -repeat_count
@@ -222,7 +221,7 @@ impl TimeRunner {
         }
     }
 
-    /// Set currently elasped now to `duration`.
+    /// Set currently elasped now to `secs`.
     pub fn set_tick(&mut self, secs: f32) {
         self.elasped.now = secs;
         self.elasped.now_period = period_percentage(secs, self.length.as_secs_f32());
@@ -327,7 +326,7 @@ impl Repeat {
     }
 }
 
-/// Tween timer repeat behavior
+/// Time runner repeat behavior
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
 pub enum RepeatStyle {
     /// Timer will wrap around.
@@ -335,16 +334,6 @@ pub enum RepeatStyle {
     WrapAround,
     /// Timer will flip its direction.
     PingPong,
-}
-
-/// Specfy which way the timer is ticking
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
-pub enum TimerDirection {
-    #[allow(missing_docs)]
-    #[default]
-    Forward,
-    #[allow(missing_docs)]
-    Backward,
 }
 
 fn saw_wave(x: f32, period: f32) -> f32 {
@@ -355,19 +344,19 @@ fn triangle_wave(x: f32, period: f32) -> f32 {
     ((x + period).rem_euclid(period * 2.) - period).abs()
 }
 
-fn triangle_wave_direction(repeats: i32) -> TimerDirection {
+fn triangle_wave_direction(repeats: i32) -> TimeDirection {
     if repeats.rem_euclid(2) == 0 {
-        TimerDirection::Forward
+        TimeDirection::Forward
     } else {
-        TimerDirection::Backward
+        TimeDirection::Backward
     }
 }
 
-fn backward_triangle_wave_direction(repeats: i32) -> TimerDirection {
+fn backward_triangle_wave_direction(repeats: i32) -> TimeDirection {
     if repeats.rem_euclid(2) == 0 {
-        TimerDirection::Backward
+        TimeDirection::Backward
     } else {
-        TimerDirection::Forward
+        TimeDirection::Forward
     }
 }
 
@@ -375,7 +364,7 @@ fn period_percentage(x: f32, period: f32) -> f32 {
     x / period
 }
 
-/// Skip a TimeRunner
+/// Skip a [`TimeRunner`].
 #[derive(Debug, Clone, Copy, Component)]
 pub struct SkipTimeRunner;
 
@@ -389,7 +378,7 @@ pub struct TimeRunnerEnded {
     pub time_runner: Entity,
     /// Currently timer direction. If is [`RepeatStyle::PingPong`], the current
     /// direction will be its already changed direction.
-    pub current_direction: TimerDirection,
+    pub current_direction: TimeDirection,
     /// The repeat this time runner had.
     pub with_repeat: Option<Repeat>,
 }
@@ -406,38 +395,40 @@ impl TimeRunnerEnded {
 }
 
 /// Tick time runner then send [`TimeRunnerEnded`] event if qualified for.
-pub fn tick_tweener_system(
+pub fn tick_time_runner_system(
     time: Res<Time<Real>>,
-    mut q_tweener: Query<(Entity, &mut TimeRunner)>,
+    mut q_time_runner: Query<(Entity, &mut TimeRunner)>,
     mut ended_writer: EventWriter<TimeRunnerEnded>,
 ) {
     let delta = time.delta_seconds();
-    q_tweener.iter_mut().for_each(|(entity, mut time_runner)| {
-        if time_runner.paused || time_runner.is_completed() {
-            return;
-        }
-        let scale = time_runner.time_scale;
-        time_runner.raw_tick(delta * scale);
+    q_time_runner
+        .iter_mut()
+        .for_each(|(entity, mut time_runner)| {
+            if time_runner.paused || time_runner.is_completed() {
+                return;
+            }
+            let scale = time_runner.time_scale;
+            time_runner.raw_tick(delta * scale);
 
-        let n = time_runner.elasped().now_period;
-        let send_event = match time_runner.repeat {
-            Some((_, RepeatStyle::PingPong)) => {
-                (time_runner.direction == TimerDirection::Forward && n < 0.)
-                    || (time_runner.direction == TimerDirection::Backward && n >= 1.)
+            let n = time_runner.elasped().now_period;
+            let send_event = match time_runner.repeat {
+                Some((_, RepeatStyle::PingPong)) => {
+                    (time_runner.direction == TimeDirection::Forward && n < 0.)
+                        || (time_runner.direction == TimeDirection::Backward && n >= 1.)
+                }
+                _ => {
+                    (time_runner.direction == TimeDirection::Backward && n < 0.)
+                        || (time_runner.direction == TimeDirection::Forward && n >= 1.)
+                }
+            };
+            if send_event {
+                ended_writer.send(TimeRunnerEnded {
+                    time_runner: entity,
+                    current_direction: time_runner.direction,
+                    with_repeat: time_runner.repeat.map(|r| r.0),
+                });
             }
-            _ => {
-                (time_runner.direction == TimerDirection::Backward && n < 0.)
-                    || (time_runner.direction == TimerDirection::Forward && n >= 1.)
-            }
-        };
-        if send_event {
-            ended_writer.send(TimeRunnerEnded {
-                time_runner: entity,
-                current_direction: time_runner.direction,
-                with_repeat: time_runner.repeat.map(|r| r.0),
-            });
-        }
-    });
+        });
 }
 
 /// System for updating any [`TimeSpan`] with the correct [`TimeSpanProgress`]
@@ -451,7 +442,7 @@ pub fn time_runner_system(
 ) {
     use DurationQuotient::*;
     use RepeatStyle::*;
-    use TimerDirection::*;
+    use TimeDirection::*;
 
     let mut just_completed_runners = q_runner.iter_many(&runner_just_completed);
     while let Some((runner_entity, runner, children)) = just_completed_runners.fetch_next() {
@@ -509,9 +500,9 @@ pub fn time_runner_system(
 
                 let direction = if repeated.is_none() {
                     match runner_elasped_previous.total_cmp(&runner_elasped_now) {
-                        Ordering::Less => TimerDirection::Forward,
+                        Ordering::Less => TimeDirection::Forward,
                         Ordering::Equal => runner_direction,
-                        Ordering::Greater => TimerDirection::Backward,
+                        Ordering::Greater => TimeDirection::Backward,
                     }
                 } else {
                     runner_direction
@@ -588,7 +579,7 @@ pub fn time_runner_system(
     }
 
     fn span_in_range(
-        direction: TimerDirection,
+        direction: TimeDirection,
         previous_quotient: DurationQuotient,
         now_quotient: DurationQuotient,
         repeated: Option<RepeatStyle>,
@@ -598,106 +589,103 @@ pub fn time_runner_system(
         // The edge cases are the time when the timer are really short
         // or delta is really long per frame.
         //
-        // This is not accounted for when the timer might repeat
-        // multiple time in one frame. When that timer is this ridiculously
-        // fast or the game heavily lagged, I don't think that need to
-        // be accounted.
+        // Currently unknown what happen when timer repeated multiple times in one frame.
 
         match (
-                    direction,
-                    previous_quotient,
-                    now_quotient,
-                    repeated,
-                ) {
-                    (_, Inside, Inside, None) => {
-                        // match f {
-                        //     Forward => println!("forward"),
-                        //     Backward => println!("backward"),
-                        // }
-                        Some(UseTime::Current)
-                    },
-                    // -------------------------------------------------------
-                    | (Forward, Before, Inside, None)
-                    | (Forward, Inside, After, None)
-                    | (Forward, Before, After, None)
-                        => {
-                            // println!("inter forward");
-                            Some(UseTime::Current)
-                        },
+            direction,
+            previous_quotient,
+            now_quotient,
+            repeated,
+        ) {
+            (_, Inside, Inside, None) => {
+                // match f {
+                //     Forward => println!("forward"),
+                //     Backward => println!("backward"),
+                // }
+                Some(UseTime::Current)
+            },
+            // ----------------------------------------------------------------
+            | (Forward, Before, Inside, None)
+            | (Forward, Inside, After, None)
+            | (Forward, Before, After, None)
+                => {
+                    // println!("inter forward");
+                    Some(UseTime::Current)
+                },
 
-                    // -------------------------------------------------------
-                    | (Backward, After, Inside, None)
-                    | (Backward, Inside, Before, None)
-                    | (Backward, After, Before, None)
-                        => {
-                            // println!("inter backward");
-                            Some(UseTime::Current)
-                        },
+            // ----------------------------------------------------------------
+            | (Backward, After, Inside, None)
+            | (Backward, Inside, Before, None)
+            | (Backward, After, Before, None)
+                => {
+                    // println!("inter backward");
+                    Some(UseTime::Current)
+                },
 
-                    // --------------------------------------------------------
-                    // don't remove these comments, may use for debugging in the future
-                    | (Forward, Before, Before, Some(WrapAround)) // 1&2 max
-                    | (Forward, Inside, Before, Some(WrapAround)) // 1 max
-                        => {
-                            // println!("forward wrap use max");
-                            Some(UseTime::Max)
-                        },
-                    | (Forward, Before, Inside, Some(WrapAround)) // 2 now
-                    | (Forward, Before, After, Some(WrapAround)) // 2 now, max
-                    | (Forward, Inside, Inside, Some(WrapAround)) // 1&2 now
-                    | (Forward, Inside, After, Some(WrapAround)) // 2 now, max
-                    | (Forward, After, Inside, Some(WrapAround)) // 1 now 
-                    | (Forward, After, After, Some(WrapAround)) // 1&2 now, max
-                    // | (Forward, After, Before, Some(WrapAround)) // 1
-                        => {
-                            // println!("forward wrap use current");
-                            Some(UseTime::Current)
-                        },
+            // -----------------------------------------------------------------
+            // don't remove these comments, may use for debugging in the future
+            | (Forward, Before, Before, Some(WrapAround)) // 1&2 max
+            | (Forward, Inside, Before, Some(WrapAround)) // 1 max
+                => {
+                    // println!("forward wrap use max");
+                    Some(UseTime::Max)
+                },
+            | (Forward, Before, Inside, Some(WrapAround)) // 2 now
+            | (Forward, Before, After, Some(WrapAround)) // 2 now, max
+            | (Forward, Inside, Inside, Some(WrapAround)) // 1&2 now
+            | (Forward, Inside, After, Some(WrapAround)) // 2 now, max
+            | (Forward, After, Inside, Some(WrapAround)) // 1 now 
+            | (Forward, After, After, Some(WrapAround)) // 1&2 now, max
+            // | (Forward, After, Before, Some(WrapAround)) // 1
+                => {
+                    // println!("forward wrap use current");
+                    Some(UseTime::Current)
+                },
 
-                    // -------------------------------------------------------
-                    | (Backward, After, After, Some(WrapAround)) // 1&2 min
-                    | (Backward, Inside, After, Some(WrapAround)) // 1 min
-                        => {
-                            // println!("backward wrap use min");
-                            Some(UseTime::Min)
-                        },
-                    | (Backward, Before, Before, Some(WrapAround)) // 1&2 now, min
-                    | (Backward, Before, Inside, Some(WrapAround)) // 1 now 
-                    | (Backward, Inside, Before, Some(WrapAround)) // 2 now, min
-                    | (Backward, Inside, Inside, Some(WrapAround)) // 1&2 now
-                    | (Backward, After, Before, Some(WrapAround)) // 2 now, min
-                    | (Backward, After, Inside, Some(WrapAround)) // 2 now
-                    // | (Backward, Before, After, Some(WrapAround)) // 1
-                        => {
-                            // println!("backward wrap use current");
-                            Some(UseTime::Current)
-                        },
+            // ----------------------------------------------------------------
+            | (Backward, After, After, Some(WrapAround)) // 1&2 min
+            | (Backward, Inside, After, Some(WrapAround)) // 1 min
+                => {
+                    // println!("backward wrap use min");
+                    Some(UseTime::Min)
+                },
+            | (Backward, Before, Before, Some(WrapAround)) // 1&2 now, min
+            | (Backward, Before, Inside, Some(WrapAround)) // 1 now 
+            | (Backward, Inside, Before, Some(WrapAround)) // 2 now, min
+            | (Backward, Inside, Inside, Some(WrapAround)) // 1&2 now
+            | (Backward, After, Before, Some(WrapAround)) // 2 now, min
+            | (Backward, After, Inside, Some(WrapAround)) // 2 now
+            // | (Backward, Before, After, Some(WrapAround)) // 1
+                => {
+                    // println!("backward wrap use current");
+                    Some(UseTime::Current)
+                },
 
-                    // -------------------------------------------------------
-                    | (Backward, Before, Before, Some(PingPong)) // 1&2 now, min
-                    | (Backward, Before, Inside, Some(PingPong)) // 1 now
-                    | (Backward, Before, After, Some(PingPong)) // 1 now, max
-                    | (Backward, Inside, Before, Some(PingPong)) // 2 now, min
-                    | (Backward, Inside, Inside, Some(PingPong)) // 1&2 now
-                    | (Backward, Inside, After, Some(PingPong)) // 1 now, max
-                    | (Backward, After, Before, Some(PingPong)) // 2 now, min
-                    | (Backward, After, Inside, Some(PingPong)) // 2 now
-                    // | (Backward, After, After, Some(PingPong)) // 1&2
-                        => Some(UseTime::Current),
+            // ----------------------------------------------------------------
+            | (Backward, Before, Before, Some(PingPong)) // 1&2 now, min
+            | (Backward, Before, Inside, Some(PingPong)) // 1 now
+            | (Backward, Before, After, Some(PingPong)) // 1 now, max
+            | (Backward, Inside, Before, Some(PingPong)) // 2 now, min
+            | (Backward, Inside, Inside, Some(PingPong)) // 1&2 now
+            | (Backward, Inside, After, Some(PingPong)) // 1 now, max
+            | (Backward, After, Before, Some(PingPong)) // 2 now, min
+            | (Backward, After, Inside, Some(PingPong)) // 2 now
+            // | (Backward, After, After, Some(PingPong)) // 1&2
+                => Some(UseTime::Current),
 
-                    // -------------------------------------------------------
-                    // | (Forward, Before, Before, Some(PingPong)) // 1&2
-                    | (Forward, Before, Inside, Some(PingPong)) // 2 now
-                    | (Forward, Before, After, Some(PingPong)) // 2 now, max
-                    | (Forward, Inside, Before, Some(PingPong)) // 1 now, min
-                    | (Forward, Inside, Inside, Some(PingPong)) // 1&2 now
-                    | (Forward, Inside, After, Some(PingPong)) // 2 now, max
-                    | (Forward, After, Before, Some(PingPong)) // 1 now, min
-                    | (Forward, After, Inside, Some(PingPong)) // 1 now
-                    | (Forward, After, After, Some(PingPong)) // 1&2 now, max
-                        => Some(UseTime::Current),
-                    _ => None,
-                }
+            // ----------------------------------------------------------------
+            // | (Forward, Before, Before, Some(PingPong)) // 1&2
+            | (Forward, Before, Inside, Some(PingPong)) // 2 now
+            | (Forward, Before, After, Some(PingPong)) // 2 now, max
+            | (Forward, Inside, Before, Some(PingPong)) // 1 now, min
+            | (Forward, Inside, Inside, Some(PingPong)) // 1&2 now
+            | (Forward, Inside, After, Some(PingPong)) // 2 now, max
+            | (Forward, After, Before, Some(PingPong)) // 1 now, min
+            | (Forward, After, Inside, Some(PingPong)) // 1 now
+            | (Forward, After, After, Some(PingPong)) // 1&2 now, max
+                => Some(UseTime::Current),
+            _ => None,
+        }
     }
 }
 
@@ -747,7 +735,7 @@ mod test {
     #[test]
     fn timer_backward() {
         let mut timer = TimeRunner::new(secs(5.));
-        timer.set_direction(TimerDirection::Backward);
+        timer.set_direction(TimeDirection::Backward);
 
         timer.raw_tick(1.);
         assert_eq!(timer.elasped.now, 0.);
@@ -806,7 +794,7 @@ mod test {
     fn timer_backward_wrap_around() {
         let mut timer = TimeRunner::new(secs(5.));
         timer.set_repeat(Some((Repeat::Infinitely, RepeatStyle::WrapAround)));
-        timer.set_direction(TimerDirection::Backward);
+        timer.set_direction(TimeDirection::Backward);
 
         timer.raw_tick(1.);
         assert_eq!(timer.elasped.now, 4.);
@@ -890,7 +878,7 @@ mod test {
     fn timer_backward_wrap_around_times() {
         let mut timer = TimeRunner::new(secs(5.));
         timer.set_repeat(Some((Repeat::times(2), RepeatStyle::WrapAround)));
-        timer.set_direction(TimerDirection::Backward);
+        timer.set_direction(TimeDirection::Backward);
 
         timer.raw_tick(4.);
         assert_eq!(timer.elasped.now, 1.);
@@ -934,31 +922,31 @@ mod test {
         timer.raw_tick(3.);
         assert_eq!(timer.elasped.now, 3.);
         assert_eq!(timer.elasped.now_period, 3. / 5.);
-        assert_eq!(timer.direction, TimerDirection::Forward);
+        assert_eq!(timer.direction, TimeDirection::Forward);
 
         timer.raw_tick(3.);
         assert_eq!(timer.elasped.now, 4.);
         assert_eq!(timer.elasped.now_period, 6. / 5.);
-        assert_eq!(timer.direction, TimerDirection::Backward);
+        assert_eq!(timer.direction, TimeDirection::Backward);
 
         timer.raw_tick(3.);
         assert_eq!(timer.elasped.now, 1.);
         assert_eq!(timer.elasped.now_period, 1. / 5.);
-        assert_eq!(timer.direction, TimerDirection::Backward);
+        assert_eq!(timer.direction, TimeDirection::Backward);
 
         timer.raw_tick(3.);
         assert_eq!(timer.elasped.now, 2.);
         assert_eq!(timer.elasped.now_period, -2. / 5.);
-        assert_eq!(timer.direction, TimerDirection::Forward);
+        assert_eq!(timer.direction, TimeDirection::Forward);
 
         timer.raw_tick(3.);
         assert_eq!(timer.elasped.now, 5.);
         assert_eq!(timer.elasped.now_period, 5. / 5.);
-        assert_eq!(timer.direction, TimerDirection::Backward);
+        assert_eq!(timer.direction, TimeDirection::Backward);
 
         timer.raw_tick(3.);
         assert_eq!(timer.elasped.now, 2.);
         assert_eq!(timer.elasped.now_period, 2. / 5.);
-        assert_eq!(timer.direction, TimerDirection::Backward);
+        assert_eq!(timer.direction, TimeDirection::Backward);
     }
 }

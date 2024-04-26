@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::ops;
 use std::time::Duration;
 
@@ -200,10 +201,29 @@ pub struct TimeSpanProgress {
 }
 
 impl TimeSpanProgress {
+    /// Direction of the progress
+    pub fn direction(&self) -> Option<TimeDirection> {
+        match self.now.total_cmp(&self.previous) {
+            Ordering::Greater => Some(TimeDirection::Forward),
+            Ordering::Less => Some(TimeDirection::Backward),
+            Ordering::Equal => None,
+        }
+    }
+
     pub(crate) fn update(&mut self, now: f32, now_percentage: f32) {
         self.previous_percentage = self.now_percentage;
         self.previous = self.now;
         self.now_percentage = now_percentage;
         self.now = now;
     }
+}
+
+/// Time direciton
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+pub enum TimeDirection {
+    #[default]
+    #[allow(missing_docs)]
+    Forward,
+    #[allow(missing_docs)]
+    Backward,
 }
