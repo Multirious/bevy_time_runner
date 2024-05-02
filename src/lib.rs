@@ -39,8 +39,10 @@ use bevy::prelude::*;
 
 mod time_runner;
 mod time_span;
+mod time_span_group;
 pub use time_runner::*;
 pub use time_span::*;
+pub use time_span_group::*;
 
 /// Add [`time_runner_system`]
 /// Registers [`TimeRunner`]
