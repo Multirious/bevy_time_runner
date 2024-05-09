@@ -124,6 +124,10 @@ impl TimeSpan {
     pub fn max(&self) -> TimeBound {
         self.max
     }
+
+    pub fn length(&self) -> Duration {
+        self.max.duration() - self.min.duration()
+    }
 }
 
 impl Default for TimeSpan {
@@ -190,13 +194,13 @@ pub struct TimeSpanProgress {
     /// Value can be more than 1 or negative to account for overshooting
     /// and undershooting. It's up to the implementor on how to deal with this.
     pub now_percentage: f32,
-    /// Now in seconds
+    /// Now in seconds that should be relative to the current span
     pub now: f32,
     /// Value between 0–1 signalling the progress of in percentage.
     /// Value can be more than 1 or negative to account for overshooting
     /// and undershooting. It's up to the implementor on how to deal with this.
     pub previous_percentage: f32,
-    /// Previous in seconds
+    /// Previous in seconds that should be relative to the current span
     pub previous: f32,
 }
 
