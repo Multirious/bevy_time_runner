@@ -46,13 +46,16 @@ pub use time_span::*;
 /// Registers [`TimeRunner`]
 #[derive(Debug)]
 pub struct TimeRunnerPlugin {
-    /// The schedule this plugin will use
+    /// All systems will be put to this schedule
     pub schedule: InternedScheduleLabel,
 }
 
 impl Plugin for TimeRunnerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(self.schedule, time_runner_system)
-            .register_type::<TimeRunner>();
+        app.add_systems(
+            self.schedule,
+            (tick_time_runner_system, time_runner_system).chain(),
+        )
+        .register_type::<TimeRunner>();
     }
 }
