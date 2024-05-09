@@ -34,7 +34,7 @@
 //!
 #![warn(missing_docs)]
 
-use bevy::ecs::schedule::InternedScheduleLabel;
+use bevy::ecs::schedule::{InternedScheduleLabel, ScheduleLabel};
 use bevy::prelude::*;
 
 mod time_runner;
@@ -48,6 +48,14 @@ pub use time_span::*;
 pub struct TimeRunnerPlugin {
     /// All systems will be put to this schedule
     pub schedule: InternedScheduleLabel,
+}
+
+impl Default for TimeRunnerPlugin {
+    fn default() -> Self {
+        TimeRunnerPlugin {
+            schedule: PostUpdate.intern(),
+        }
+    }
 }
 
 impl Plugin for TimeRunnerPlugin {
