@@ -64,6 +64,7 @@ impl Plugin for TimeRunnerPlugin {
             self.schedule,
             (tick_time_runner_system, time_runner_system).chain(),
         )
+        .add_event::<TimeRunnerEnded>()
         .register_type::<TimeRunner>();
     }
 }
