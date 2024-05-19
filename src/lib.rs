@@ -66,5 +66,8 @@ impl Plugin for TimeRunnerPlugin {
         )
         .add_event::<TimeRunnerEnded>()
         .register_type::<TimeRunner>();
+
+        #[cfg(feature = "bevy_eventlistener")]
+        app.add_plugins(bevy_eventlistener::EventListenerPlugin::<TimeRunnerEnded>::default());
     }
 }
