@@ -60,14 +60,30 @@ impl Default for TimeRunnerPlugin {
 
 impl Plugin for TimeRunnerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
+        #[cfg(feature = "bevy_eventlistener")]
+        app.add_plugins(bevy_eventlistener::EventListenerPlugin::<TimeRunnerEnded>::default());
+
+        app.configure_sets(
             self.schedule,
-            (tick_time_runner_system, time_runner_system).chain(),
+            (TimeRunnerSet::TickTimer, TimeRunnerSet::Progress).chain(),
+        )
+        .add_systems(
+            self.schedule,
+            (
+                tick_time_runner_system.in_set(TimeRunnerSet::TickTimer),
+                time_runner_system.in_set(TimeRunnerSet::Progress),
+            ),
         )
         .add_event::<TimeRunnerEnded>()
         .register_type::<TimeRunner>();
-
-        #[cfg(feature = "bevy_eventlistener")]
-        app.add_plugins(bevy_eventlistener::EventListenerPlugin::<TimeRunnerEnded>::default());
     }
+}
+
+/// System set in this crate
+#[derive(Debug, PartialEq, Eq, Hash, Clone, SystemSet)]
+pub enum TimeRunnerSet {
+    /// Systems responsible for ticking timer
+    TickTimer,
+    /// Systems responsible for updating [`TimeSpanProgress`]
+    Progress,
 }
