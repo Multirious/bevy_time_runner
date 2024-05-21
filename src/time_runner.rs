@@ -527,19 +527,25 @@ pub fn time_runner_system(
                     let new_now_percentage = if span_length > 0. {
                         new_now / span_length
                     } else {
-                        match new_now.total_cmp(&span_min) {
-                            Ordering::Greater => f32::INFINITY,
+                        match new_now.total_cmp(&0.) {
+                            Ordering::Greater => {
+                                println!("INFINITY");
+                                f32::INFINITY
+                            }
                             Ordering::Equal => match runner_direction {
                                 Forward => f32::INFINITY,
                                 Backward => f32::NEG_INFINITY,
                             },
-                            Ordering::Less => f32::NEG_INFINITY,
+                            Ordering::Less => {
+                                println!("NEG_INFINITY");
+                                f32::NEG_INFINITY
+                            }
                         }
                     };
                     let new_previous_percentage = if span_length > 0. {
                         new_previous / span_length
                     } else {
-                        match new_previous.total_cmp(&span_min) {
+                        match new_previous.total_cmp(&0.) {
                             Ordering::Greater => f32::INFINITY,
                             Ordering::Equal => match runner_direction {
                                 Forward => f32::INFINITY,
@@ -980,6 +986,37 @@ mod test {
                 now: 2.,
                 previous_percentage: -2.,
                 previous: -4.,
+            }
+        );
+    }
+
+    #[test]
+    fn timer_zero_length_span() {
+        let mut world = World::default();
+
+        let mut time_runner = TimeRunner::new(secs(4.));
+        time_runner.tick(4.);
+        let mut time_span_id = Entity::PLACEHOLDER;
+        world.spawn(time_runner).with_children(|c| {
+            time_span_id = c
+                .spawn(TimeSpan::try_from(secs(2.)..=secs(2.)).unwrap())
+                .id();
+        });
+
+        world.run_system_once(time_runner_system);
+
+        let progress = world
+            .entity(time_span_id)
+            .get::<TimeSpanProgress>()
+            .expect("TimeSpanProgress should be here");
+        dbg!(progress);
+        assert_eq!(
+            *progress,
+            TimeSpanProgress {
+                now_percentage: f32::INFINITY,
+                now: 0.,
+                previous_percentage: f32::NEG_INFINITY,
+                previous: -2.,
             }
         );
     }
