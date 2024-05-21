@@ -610,7 +610,7 @@ pub fn time_runner_system(
             | (Forward, Before, After, None)
                 => {
                     // println!("inter forward");
-                    Some(UseTime::Current)
+                    Some(UseTime::Max)
                 },
 
             // ----------------------------------------------------------------
@@ -619,7 +619,7 @@ pub fn time_runner_system(
             | (Backward, After, Before, None)
                 => {
                     // println!("inter backward");
-                    Some(UseTime::Current)
+                    Some(UseTime::Min)
                 },
 
             // -----------------------------------------------------------------
@@ -691,6 +691,8 @@ pub fn time_runner_system(
 
 #[cfg(test)]
 mod test {
+    use bevy::ecs::system::RunSystemOnce;
+
     use super::*;
 
     fn secs(secs: f32) -> Duration {
@@ -948,5 +950,37 @@ mod test {
         assert_eq!(timer.elasped.now, 2.);
         assert_eq!(timer.elasped.now_period, 2. / 5.);
         assert_eq!(timer.direction, TimeDirection::Backward);
+    }
+
+    // There's no test for repeating ones yet and I bet most of them is wrong.
+    #[test]
+    fn timer_big_tick() {
+        let mut world = World::default();
+
+        let mut time_runner = TimeRunner::new(secs(10.));
+        time_runner.tick(10.);
+        let mut time_span_id = Entity::PLACEHOLDER;
+        world.spawn(time_runner).with_children(|c| {
+            time_span_id = c
+                .spawn(TimeSpan::try_from(secs(4.)..secs(6.)).unwrap())
+                .id();
+        });
+
+        world.run_system_once(time_runner_system);
+
+        let progress = world
+            .entity(time_span_id)
+            .get::<TimeSpanProgress>()
+            .expect("TimeSpanProgress should be here");
+        dbg!(progress);
+        assert_eq!(
+            *progress,
+            TimeSpanProgress {
+                now_percentage: 1.,
+                now: 2.,
+                previous_percentage: -2.,
+                previous: -4.,
+            }
+        );
     }
 }
