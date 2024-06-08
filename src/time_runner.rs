@@ -986,8 +986,8 @@ mod test {
         assert_eq!(
             *progress,
             TimeSpanProgress {
-                now_percentage: 1.,
-                now: 2.,
+                now_percentage: 3.,
+                now: 6.,
                 previous_percentage: -2.,
                 previous: -4.,
             }
@@ -1018,7 +1018,7 @@ mod test {
             *progress,
             TimeSpanProgress {
                 now_percentage: f32::INFINITY,
-                now: 0.,
+                now: 2.,
                 previous_percentage: f32::NEG_INFINITY,
                 previous: -2.,
             }
