@@ -7,9 +7,10 @@
 //! ```
 //! # use bevy::ecs::system::CommandQueue;
 //! # use bevy::ecs::system::Commands;
-//! # use bevy::prelude::*;
 //! # use std::time::Duration;
-//! #
+//! use bevy::prelude::*;
+//! use bevy_time_runner::{TimeRunner, TimeSpan};
+//!
 //! fn secs(secs: u64) -> Duration {
 //!     Duration::from_secs(secs)
 //! }
