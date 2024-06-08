@@ -528,18 +528,12 @@ pub fn time_runner_system(
                         new_now / span_length
                     } else {
                         match new_now.total_cmp(&0.) {
-                            Ordering::Greater => {
-                                println!("INFINITY");
-                                f32::INFINITY
-                            }
+                            Ordering::Greater => f32::INFINITY,
                             Ordering::Equal => match runner_direction {
                                 Forward => f32::INFINITY,
                                 Backward => f32::NEG_INFINITY,
                             },
-                            Ordering::Less => {
-                                println!("NEG_INFINITY");
-                                f32::NEG_INFINITY
-                            }
+                            Ordering::Less => f32::NEG_INFINITY,
                         }
                     };
                     let new_previous_percentage = if span_length > 0. {
@@ -604,10 +598,6 @@ pub fn time_runner_system(
             repeated,
         ) {
             (_, Inside, Inside, None) => {
-                // match f {
-                //     Forward => println!("forward"),
-                //     Backward => println!("backward"),
-                // }
                 Some(UseTime::Current)
             },
             // ----------------------------------------------------------------
@@ -615,8 +605,7 @@ pub fn time_runner_system(
             | (Forward, Inside, After, None)
             | (Forward, Before, After, None)
                 => {
-                    // println!("inter forward");
-                    Some(UseTime::Max)
+                    Some(UseTime::Current)
                 },
 
             // ----------------------------------------------------------------
@@ -624,8 +613,7 @@ pub fn time_runner_system(
             | (Backward, Inside, Before, None)
             | (Backward, After, Before, None)
                 => {
-                    // println!("inter backward");
-                    Some(UseTime::Min)
+                    Some(UseTime::Current)
                 },
 
             // -----------------------------------------------------------------
