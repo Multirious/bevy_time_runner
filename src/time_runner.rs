@@ -73,8 +73,9 @@ impl TimeRunner {
     }
 
     /// Set timer length
-    pub fn set_length(&mut self, duration: Duration) {
+    pub fn set_length(&mut self, duration: Duration) -> &mut Self {
         self.length = duration;
+        self
     }
 
     /// Get timer length
@@ -83,8 +84,9 @@ impl TimeRunner {
     }
 
     /// Pauses the timer.
-    pub fn set_paused(&mut self, paused: bool) {
+    pub fn set_paused(&mut self, paused: bool) -> &mut Self {
         self.paused = paused;
+        self
     }
 
     /// Get timer paused
@@ -93,8 +95,9 @@ impl TimeRunner {
     }
 
     /// Set timer time scale
-    pub fn set_time_scale(&mut self, time_scale: f32) {
+    pub fn set_time_scale(&mut self, time_scale: f32) -> &mut Self {
         self.time_scale = time_scale;
+        self
     }
 
     /// Get timer time scale
@@ -103,8 +106,9 @@ impl TimeRunner {
     }
 
     /// Set timer direction
-    pub fn set_direction(&mut self, direction: TimeDirection) {
+    pub fn set_direction(&mut self, direction: TimeDirection) -> &mut Self {
         self.direction = direction;
+        self
     }
 
     /// Get timer direction
@@ -113,8 +117,9 @@ impl TimeRunner {
     }
 
     /// Set repeat
-    pub fn set_repeat(&mut self, repeat: Option<(Repeat, RepeatStyle)>) {
+    pub fn set_repeat(&mut self, repeat: Option<(Repeat, RepeatStyle)>) -> &mut Self {
         self.repeat = repeat;
+        self
     }
 
     /// Get timer repeat
