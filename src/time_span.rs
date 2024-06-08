@@ -125,6 +125,7 @@ impl TimeSpan {
         self.max
     }
 
+    /// `self.max.duration() - self.min.duration()`
     pub fn length(&self) -> Duration {
         self.max.duration() - self.min.duration()
     }
