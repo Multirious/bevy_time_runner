@@ -34,8 +34,10 @@
 //!
 #![warn(missing_docs)]
 
-use bevy::ecs::schedule::{InternedScheduleLabel, ScheduleLabel};
-use bevy::prelude::*;
+#[cfg(feature = "bevy_app")]
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_ecs::schedule::{InternedScheduleLabel, ScheduleLabel};
 
 mod time_runner;
 mod time_span;
@@ -44,12 +46,14 @@ pub use time_span::*;
 
 /// Add [`time_runner_system`]
 /// Registers [`TimeRunner`]
+#[cfg(feature = "bevy_app")]
 #[derive(Debug)]
 pub struct TimeRunnerPlugin {
     /// All systems will be put to this schedule
     pub schedule: InternedScheduleLabel,
 }
 
+#[cfg(feature = "bevy_app")]
 impl Default for TimeRunnerPlugin {
     fn default() -> Self {
         TimeRunnerPlugin {
@@ -58,6 +62,7 @@ impl Default for TimeRunnerPlugin {
     }
 }
 
+#[cfg(feature = "bevy_app")]
 impl Plugin for TimeRunnerPlugin {
     fn build(&self, app: &mut App) {
         #[cfg(feature = "bevy_eventlistener")]

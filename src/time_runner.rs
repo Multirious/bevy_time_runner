@@ -1,4 +1,8 @@
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_hierarchy::prelude::*;
+#[cfg(feature = "bevy_reflect")]
+use bevy_reflect::prelude::*;
+use bevy_time::prelude::*;
 use std::{cmp::Ordering, time::Duration};
 
 #[cfg(feature = "bevy_eventlistener")]
@@ -8,7 +12,8 @@ use crate::time_span::*;
 
 /// Contains the current elasped time per tick.
 /// Have more informations useful for handling edge cases and retain timing accuracy.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Reflect)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 pub struct TimeRunnerElasped {
     now: f32,
     now_period: f32,
@@ -47,8 +52,9 @@ impl TimeRunnerElasped {
 }
 
 /// Advanced timer
-#[derive(Debug, Clone, PartialEq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Debug, Clone, PartialEq, Component)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
+#[cfg_attr(feature = "bevy_reflect", reflect(Component))]
 pub struct TimeRunner {
     paused: bool,
     /// The current elasped time with other useful information.
@@ -255,7 +261,8 @@ impl Default for TimeRunner {
 }
 
 /// Timer repeat configuration
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 pub enum Repeat {
     /// Repeat infinitely
     Infinitely,
@@ -332,7 +339,8 @@ impl Repeat {
 }
 
 /// Time runner repeat behavior
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 pub enum RepeatStyle {
     /// Timer will wrap around.
     #[default]
@@ -374,9 +382,10 @@ fn period_percentage(x: f32, period: f32) -> f32 {
 pub struct SkipTimeRunner;
 
 /// Fired when a time runner repeated or completed
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 #[cfg_attr(feature = "bevy_eventlistener", derive(EntityEvent))]
 #[cfg_attr(feature = "bevy_eventlistener", can_bubble)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Event, Reflect)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Event)]
 pub struct TimeRunnerEnded {
     /// [`TimeRunner`] that just ended
     #[cfg_attr(feature = "bevy_eventlistener", target)]
@@ -690,7 +699,7 @@ pub fn time_runner_system(
 
 #[cfg(test)]
 mod test {
-    use bevy::ecs::system::RunSystemOnce;
+    use bevy_ecs::system::RunSystemOnce as _;
 
     use super::*;
 
