@@ -15,9 +15,9 @@ This crate is originally a core part of [`bevy_tween`](https://github.com/Multir
 
 ## Bevy Version Support
 
-|`bevy`|`bevy_tween`|
-|------|------------|
-|0.13  |0.1         |
+|`bevy`|`bevy_time_runner`|
+|------|------------------|
+|0.13  |0.1               |
 
 
 ## Contributions
