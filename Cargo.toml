@@ -14,7 +14,7 @@ categories = [ "game-development" ]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy_hierarchy = { version = "0.13.0", default-features = false }
+bevy_hierarchy = { version = "0.13.0" }
 bevy_time = { version = "0.13.0", default-features = false }
 bevy_ecs = { version = "0.13.0", default-features = false }
 bevy_app = { version = "0.13.0", default-features = false, optional = true }
