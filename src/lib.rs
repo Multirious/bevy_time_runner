@@ -80,8 +80,19 @@ impl Plugin for TimeRunnerPlugin {
                 time_runner_system.in_set(TimeRunnerSet::Progress),
             ),
         )
-        .add_event::<TimeRunnerEnded>()
-        .register_type::<TimeRunner>();
+        .add_event::<TimeRunnerEnded>();
+
+        #[cfg(feature = "bevy_reflect")]
+        app.register_type::<TimeRunner>()
+            .register_type::<SkipTimeRunner>()
+            .register_type::<TimeRunnerElasped>()
+            .register_type::<TimeRunnerEnded>()
+            .register_type::<TimeSpan>()
+            .register_type::<TimeSpanProgress>()
+            .register_type::<Repeat>()
+            .register_type::<RepeatStyle>()
+            .register_type::<TimeBound>()
+            .register_type::<TimeDirection>();
     }
 }
 

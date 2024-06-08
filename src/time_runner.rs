@@ -379,6 +379,8 @@ fn period_percentage(x: f32, period: f32) -> f32 {
 
 /// Skip a [`TimeRunner`].
 #[derive(Debug, Clone, Copy, Component)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
+#[cfg_attr(feature = "bevy_reflect", reflect(Component))]
 pub struct SkipTimeRunner;
 
 /// Fired when a time runner repeated or completed
