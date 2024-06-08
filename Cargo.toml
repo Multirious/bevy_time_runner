@@ -29,3 +29,6 @@ bevy_app = [ "dep:bevy_app"]
 # Add entity-targeted events with bevy_eventlistener
 bevy_eventlistener = [ "dep:bevy_eventlistener" ]
 
+[build-dependencies]
+rustc_version = "0.4.0"
+
