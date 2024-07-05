@@ -5,7 +5,7 @@
 //! component and their children to contain the [`TimeSpan`] component like so:
 //!
 //! ```
-//! # use bevy::ecs::system::CommandQueue;
+//! # use bevy::ecs::world::CommandQueue;
 //! # use bevy::ecs::system::Commands;
 //! # use std::time::Duration;
 //! use bevy::prelude::*;
