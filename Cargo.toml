@@ -34,7 +34,7 @@ bevy_app = [ "dep:bevy_app"]
 bevy_eventlistener = [ "dep:bevy_eventlistener" ]
 
 [dev-dependencies]
-bevy = { version = "0.13.0" , default-features = false }
+bevy = { version = "0.14.0" , default-features = false }
 
 [build-dependencies]
 rustc_version = "0.4.0"
