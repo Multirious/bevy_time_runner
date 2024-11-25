@@ -2,11 +2,14 @@ use std::cmp::Ordering;
 use std::ops;
 use std::time::Duration;
 
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+#[cfg(feature = "bevy_reflect")]
+use bevy_reflect::prelude::*;
 
 /// Bounding enum for [`Duration`] to be exclusivively checked or inclusivively
 /// checked.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 pub enum TimeBound {
     /// Inclusively check this duration
     Inclusive(Duration),
@@ -70,8 +73,9 @@ impl std::fmt::Display for NewTimeSpanError {
 }
 
 /// Define the range of time
-#[derive(Debug, Component, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
-#[reflect(Component)]
+#[derive(Debug, Component, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
+#[cfg_attr(feature = "bevy_reflect", reflect(Component))]
 pub struct TimeSpan {
     /// Minimum time of this time span.
     min: TimeBound,
@@ -125,6 +129,7 @@ impl TimeSpan {
         self.max
     }
 
+    /// `self.max.duration() - self.min.duration()`
     pub fn length(&self) -> Duration {
         self.max.duration() - self.min.duration()
     }
@@ -187,8 +192,9 @@ pub(crate) enum DurationQuotient {
 }
 
 /// [`TimeSpanProgress`] is automatically managed by its runner.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Component)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
+#[cfg_attr(feature = "bevy_reflect", reflect(Component))]
 pub struct TimeSpanProgress {
     /// Value between 0–1 signalling the progress in percentage.
     /// Value can be more than 1 or negative to account for overshooting
@@ -223,7 +229,8 @@ impl TimeSpanProgress {
 }
 
 /// Time direciton
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 pub enum TimeDirection {
     #[default]
     #[allow(missing_docs)]

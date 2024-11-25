@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check_build_test:
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      RUSTDOCFLAGS: -D warnings
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          ~/.cargo/.crates.toml
+          ~/.cargo/.crates2.json
+          target/
+        key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.toml') }}
+      
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: dtolnay/rust-toolchain@nightly
+      
+    - name: Install dependencies
+      if: runner.os == 'linux'
+      run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+      
+    - name: Install cargo commands
+      run: cargo install cargo-all-features
+      
+    - name: Check all features
+      run: cargo check-all-features
+
+    - name: Check docs
+      run: cargo +nightly doc --all-features --no-deps
+
+    - name: Check all examples
+      run: cargo check --examples
+      
+    - name: Run tests
+      run: cargo test

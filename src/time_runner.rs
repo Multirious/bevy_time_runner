@@ -1,4 +1,8 @@
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_hierarchy::prelude::*;
+#[cfg(feature = "bevy_reflect")]
+use bevy_reflect::prelude::*;
+use bevy_time::prelude::*;
 use std::{cmp::Ordering, time::Duration};
 
 #[cfg(feature = "bevy_eventlistener")]
@@ -8,7 +12,8 @@ use crate::time_span::*;
 
 /// Contains the current elasped time per tick.
 /// Have more informations useful for handling edge cases and retain timing accuracy.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Reflect)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 pub struct TimeRunnerElasped {
     now: f32,
     now_period: f32,
@@ -47,8 +52,9 @@ impl TimeRunnerElasped {
 }
 
 /// Advanced timer
-#[derive(Debug, Clone, PartialEq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Debug, Clone, PartialEq, Component)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
+#[cfg_attr(feature = "bevy_reflect", reflect(Component))]
 pub struct TimeRunner {
     paused: bool,
     /// The current elasped time with other useful information.
@@ -73,8 +79,9 @@ impl TimeRunner {
     }
 
     /// Set timer length
-    pub fn set_length(&mut self, duration: Duration) {
+    pub fn set_length(&mut self, duration: Duration) -> &mut Self {
         self.length = duration;
+        self
     }
 
     /// Get timer length
@@ -83,8 +90,9 @@ impl TimeRunner {
     }
 
     /// Pauses the timer.
-    pub fn set_paused(&mut self, paused: bool) {
+    pub fn set_paused(&mut self, paused: bool) -> &mut Self {
         self.paused = paused;
+        self
     }
 
     /// Get timer paused
@@ -93,8 +101,9 @@ impl TimeRunner {
     }
 
     /// Set timer time scale
-    pub fn set_time_scale(&mut self, time_scale: f32) {
+    pub fn set_time_scale(&mut self, time_scale: f32) -> &mut Self {
         self.time_scale = time_scale;
+        self
     }
 
     /// Get timer time scale
@@ -103,8 +112,9 @@ impl TimeRunner {
     }
 
     /// Set timer direction
-    pub fn set_direction(&mut self, direction: TimeDirection) {
+    pub fn set_direction(&mut self, direction: TimeDirection) -> &mut Self {
         self.direction = direction;
+        self
     }
 
     /// Get timer direction
@@ -113,8 +123,9 @@ impl TimeRunner {
     }
 
     /// Set repeat
-    pub fn set_repeat(&mut self, repeat: Option<(Repeat, RepeatStyle)>) {
+    pub fn set_repeat(&mut self, repeat: Option<(Repeat, RepeatStyle)>) -> &mut Self {
         self.repeat = repeat;
+        self
     }
 
     /// Get timer repeat
@@ -250,7 +261,8 @@ impl Default for TimeRunner {
 }
 
 /// Timer repeat configuration
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 pub enum Repeat {
     /// Repeat infinitely
     Infinitely,
@@ -327,7 +339,8 @@ impl Repeat {
 }
 
 /// Time runner repeat behavior
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 pub enum RepeatStyle {
     /// Timer will wrap around.
     #[default]
@@ -366,12 +379,15 @@ fn period_percentage(x: f32, period: f32) -> f32 {
 
 /// Skip a [`TimeRunner`].
 #[derive(Debug, Clone, Copy, Component)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
+#[cfg_attr(feature = "bevy_reflect", reflect(Component))]
 pub struct SkipTimeRunner;
 
 /// Fired when a time runner repeated or completed
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 #[cfg_attr(feature = "bevy_eventlistener", derive(EntityEvent))]
 #[cfg_attr(feature = "bevy_eventlistener", can_bubble)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Event, Reflect)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Event)]
 pub struct TimeRunnerEnded {
     /// [`TimeRunner`] that just ended
     #[cfg_attr(feature = "bevy_eventlistener", target)]
@@ -527,7 +543,7 @@ pub fn time_runner_system(
                     let new_now_percentage = if span_length > 0. {
                         new_now / span_length
                     } else {
-                        match new_now.total_cmp(&span_min) {
+                        match new_now.total_cmp(&0.) {
                             Ordering::Greater => f32::INFINITY,
                             Ordering::Equal => match runner_direction {
                                 Forward => f32::INFINITY,
@@ -539,7 +555,7 @@ pub fn time_runner_system(
                     let new_previous_percentage = if span_length > 0. {
                         new_previous / span_length
                     } else {
-                        match new_previous.total_cmp(&span_min) {
+                        match new_previous.total_cmp(&0.) {
                             Ordering::Greater => f32::INFINITY,
                             Ordering::Equal => match runner_direction {
                                 Forward => f32::INFINITY,
@@ -598,10 +614,6 @@ pub fn time_runner_system(
             repeated,
         ) {
             (_, Inside, Inside, None) => {
-                // match f {
-                //     Forward => println!("forward"),
-                //     Backward => println!("backward"),
-                // }
                 Some(UseTime::Current)
             },
             // ----------------------------------------------------------------
@@ -609,7 +621,6 @@ pub fn time_runner_system(
             | (Forward, Inside, After, None)
             | (Forward, Before, After, None)
                 => {
-                    // println!("inter forward");
                     Some(UseTime::Current)
                 },
 
@@ -618,7 +629,6 @@ pub fn time_runner_system(
             | (Backward, Inside, Before, None)
             | (Backward, After, Before, None)
                 => {
-                    // println!("inter backward");
                     Some(UseTime::Current)
                 },
 
@@ -691,6 +701,8 @@ pub fn time_runner_system(
 
 #[cfg(test)]
 mod test {
+    use bevy_ecs::system::RunSystemOnce as _;
+
     use super::*;
 
     fn secs(secs: f32) -> Duration {
@@ -948,5 +960,68 @@ mod test {
         assert_eq!(timer.elasped.now, 2.);
         assert_eq!(timer.elasped.now_period, 2. / 5.);
         assert_eq!(timer.direction, TimeDirection::Backward);
+    }
+
+    // There's no test for repeating ones yet and I bet most of them is wrong.
+    #[test]
+    fn timer_big_tick() {
+        let mut world = World::default();
+
+        let mut time_runner = TimeRunner::new(secs(10.));
+        time_runner.tick(10.);
+        let mut time_span_id = Entity::PLACEHOLDER;
+        world.spawn(time_runner).with_children(|c| {
+            time_span_id = c
+                .spawn(TimeSpan::try_from(secs(4.)..secs(6.)).unwrap())
+                .id();
+        });
+
+        world.run_system_once(time_runner_system);
+
+        let progress = world
+            .entity(time_span_id)
+            .get::<TimeSpanProgress>()
+            .expect("TimeSpanProgress should be here");
+        dbg!(progress);
+        assert_eq!(
+            *progress,
+            TimeSpanProgress {
+                now_percentage: 3.,
+                now: 6.,
+                previous_percentage: -2.,
+                previous: -4.,
+            }
+        );
+    }
+
+    #[test]
+    fn timer_zero_length_span() {
+        let mut world = World::default();
+
+        let mut time_runner = TimeRunner::new(secs(4.));
+        time_runner.tick(4.);
+        let mut time_span_id = Entity::PLACEHOLDER;
+        world.spawn(time_runner).with_children(|c| {
+            time_span_id = c
+                .spawn(TimeSpan::try_from(secs(2.)..=secs(2.)).unwrap())
+                .id();
+        });
+
+        world.run_system_once(time_runner_system);
+
+        let progress = world
+            .entity(time_span_id)
+            .get::<TimeSpanProgress>()
+            .expect("TimeSpanProgress should be here");
+        dbg!(progress);
+        assert_eq!(
+            *progress,
+            TimeSpanProgress {
+                now_percentage: f32::INFINITY,
+                now: 2.,
+                previous_percentage: f32::NEG_INFINITY,
+                previous: -2.,
+            }
+        );
     }
 }

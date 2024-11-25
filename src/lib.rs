@@ -5,11 +5,12 @@
 //! component and their children to contain the [`TimeSpan`] component like so:
 //!
 //! ```
-//! # use bevy::ecs::system::CommandQueue;
+//! # use bevy::ecs::world::CommandQueue;
 //! # use bevy::ecs::system::Commands;
-//! # use bevy::prelude::*;
 //! # use std::time::Duration;
-//! #
+//! use bevy::prelude::*;
+//! use bevy_time_runner::{TimeRunner, TimeSpan};
+//!
 //! fn secs(secs: u64) -> Duration {
 //!     Duration::from_secs(secs)
 //! }
@@ -33,9 +34,12 @@
 //! This creates a very flexible timing system that's useful for variety of purposes.
 //!
 #![warn(missing_docs)]
+#![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
 
-use bevy::ecs::schedule::{InternedScheduleLabel, ScheduleLabel};
-use bevy::prelude::*;
+#[cfg(feature = "bevy_app")]
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_ecs::schedule::{InternedScheduleLabel, ScheduleLabel};
 
 mod time_runner;
 mod time_span;
@@ -46,12 +50,14 @@ pub use time_span_group::*;
 
 /// Add [`time_runner_system`]
 /// Registers [`TimeRunner`]
+#[cfg(feature = "bevy_app")]
 #[derive(Debug)]
 pub struct TimeRunnerPlugin {
     /// All systems will be put to this schedule
     pub schedule: InternedScheduleLabel,
 }
 
+#[cfg(feature = "bevy_app")]
 impl Default for TimeRunnerPlugin {
     fn default() -> Self {
         TimeRunnerPlugin {
@@ -60,12 +66,44 @@ impl Default for TimeRunnerPlugin {
     }
 }
 
+#[cfg(feature = "bevy_app")]
 impl Plugin for TimeRunnerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
+        #[cfg(feature = "bevy_eventlistener")]
+        app.add_plugins(bevy_eventlistener::EventListenerPlugin::<TimeRunnerEnded>::default());
+
+        app.configure_sets(
             self.schedule,
-            (tick_time_runner_system, time_runner_system).chain(),
+            (TimeRunnerSet::TickTimer, TimeRunnerSet::Progress).chain(),
         )
-        .register_type::<TimeRunner>();
+        .add_systems(
+            self.schedule,
+            (
+                tick_time_runner_system.in_set(TimeRunnerSet::TickTimer),
+                time_runner_system.in_set(TimeRunnerSet::Progress),
+            ),
+        )
+        .add_event::<TimeRunnerEnded>();
+
+        #[cfg(feature = "bevy_reflect")]
+        app.register_type::<TimeRunner>()
+            .register_type::<SkipTimeRunner>()
+            .register_type::<TimeRunnerElasped>()
+            .register_type::<TimeRunnerEnded>()
+            .register_type::<TimeSpan>()
+            .register_type::<TimeSpanProgress>()
+            .register_type::<Repeat>()
+            .register_type::<RepeatStyle>()
+            .register_type::<TimeBound>()
+            .register_type::<TimeDirection>();
     }
+}
+
+/// System set in this crate
+#[derive(Debug, PartialEq, Eq, Hash, Clone, SystemSet)]
+pub enum TimeRunnerSet {
+    /// Systems responsible for ticking timer
+    TickTimer,
+    /// Systems responsible for updating [`TimeSpanProgress`]
+    Progress,
 }
