@@ -5,8 +5,8 @@ use bevy_reflect::prelude::*;
 use bevy_time::prelude::*;
 use std::{cmp::Ordering, time::Duration};
 
-#[cfg(feature = "bevy_eventlistener")]
-use bevy_eventlistener::prelude::*;
+// #[cfg(feature = "bevy_eventlistener")]
+// use bevy_eventlistener::prelude::*;
 
 use crate::time_span::*;
 
@@ -385,12 +385,12 @@ pub struct SkipTimeRunner;
 
 /// Fired when a time runner repeated or completed
 #[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
-#[cfg_attr(feature = "bevy_eventlistener", derive(EntityEvent))]
-#[cfg_attr(feature = "bevy_eventlistener", can_bubble)]
+// #[cfg_attr(feature = "bevy_eventlistener", derive(EntityEvent))]
+// #[cfg_attr(feature = "bevy_eventlistener", can_bubble)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Event)]
 pub struct TimeRunnerEnded {
     /// [`TimeRunner`] that just ended
-    #[cfg_attr(feature = "bevy_eventlistener", target)]
+    // #[cfg_attr(feature = "bevy_eventlistener", target)]
     pub time_runner: Entity,
     /// Currently timer direction. If is [`RepeatStyle::PingPong`], the current
     /// direction will be its already changed direction.
@@ -416,7 +416,7 @@ pub fn tick_time_runner_system(
     mut q_time_runner: Query<(Entity, &mut TimeRunner)>,
     mut ended_writer: EventWriter<TimeRunnerEnded>,
 ) {
-    let delta = time.delta_seconds();
+    let delta = time.delta_secs();
     q_time_runner
         .iter_mut()
         .for_each(|(entity, mut time_runner)| {

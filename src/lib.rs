@@ -69,8 +69,8 @@ impl Default for TimeRunnerPlugin {
 #[cfg(feature = "bevy_app")]
 impl Plugin for TimeRunnerPlugin {
     fn build(&self, app: &mut App) {
-        #[cfg(feature = "bevy_eventlistener")]
-        app.add_plugins(bevy_eventlistener::EventListenerPlugin::<TimeRunnerEnded>::default());
+        // #[cfg(feature = "bevy_eventlistener")]
+        // app.add_plugins(bevy_eventlistener::EventListenerPlugin::<TimeRunnerEnded>::default());
 
         app.configure_sets(
             self.schedule,
