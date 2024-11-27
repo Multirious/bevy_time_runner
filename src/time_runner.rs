@@ -412,6 +412,7 @@ impl TimeRunnerEnded {
 
 /// Tick time runner then send [`TimeRunnerEnded`] event if qualified for.
 pub fn tick_time_runner_system(
+    mut commands: Commands,
     time: Res<Time<Real>>,
     mut q_time_runner: Query<(Entity, &mut TimeRunner)>,
     mut ended_writer: EventWriter<TimeRunnerEnded>,
@@ -438,11 +439,13 @@ pub fn tick_time_runner_system(
                 }
             };
             if send_event {
-                ended_writer.send(TimeRunnerEnded {
+                let event = TimeRunnerEnded {
                     time_runner: entity,
                     current_direction: time_runner.direction,
                     with_repeat: time_runner.repeat.map(|r| r.0),
-                });
+                };
+                commands.trigger_targets(event.clone(), entity);
+                ended_writer.send(event);
             }
         });
 }
