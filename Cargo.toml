@@ -14,27 +14,22 @@ categories = [ "game-development" ]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy_hierarchy = { version = "0.14.0" }
-bevy_time = { version = "0.14.0", default-features = false }
-bevy_ecs = { version = "0.14.0", default-features = false }
-bevy_app = { version = "0.14.0", default-features = false, optional = true }
-bevy_reflect = { version = "0.14.0", default-features = false, optional = true }
-bevy_eventlistener = { version = "0.8.0", optional = true }
+bevy_hierarchy = { version = "0.15.0" }
+bevy_time = { version = "0.15.0", default-features = false }
+bevy_ecs = { version = "0.15.0", default-features = false }
+bevy_app = { version = "0.15.0", default-features = false, optional = true }
+bevy_reflect = { version = "0.15.0", default-features = false, optional = true }
 
 [features]
 default = [
-  "bevy_eventlistener",
   "bevy_reflect",
   "bevy_app"
   ]
 bevy_reflect = [ "dep:bevy_reflect"]
 bevy_app = [ "dep:bevy_app"]
 
-# Add entity-targeted events with bevy_eventlistener
-bevy_eventlistener = [ "dep:bevy_eventlistener" ]
-
 [dev-dependencies]
-bevy = { version = "0.14.0" , default-features = false }
+bevy = { version = "0.15.0" , default-features = false }
 
 [build-dependencies]
 rustc_version = "0.4.0"
