@@ -39,6 +39,7 @@
 #[cfg(feature = "bevy_app")]
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
+#[cfg(feature = "bevy_app")]
 use bevy_ecs::schedule::{InternedScheduleLabel, ScheduleLabel};
 
 mod time_runner;
