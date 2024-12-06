@@ -417,7 +417,7 @@ pub fn tick_time_runner_system(
     mut q_time_runner: Query<(Entity, &mut TimeRunner)>,
     mut ended_writer: EventWriter<TimeRunnerEnded>,
 ) {
-    let delta = time.delta_seconds();
+    let delta = time.delta_secs();
     q_time_runner
         .iter_mut()
         .for_each(|(entity, mut time_runner)| {
