@@ -413,7 +413,7 @@ impl TimeRunnerEnded {
 /// Tick time runner then send [`TimeRunnerEnded`] event if qualified for.
 pub fn tick_time_runner_system(
     mut commands: Commands,
-    time: Res<Time<Real>>,
+    time: Res<Time>,
     mut q_time_runner: Query<(Entity, &mut TimeRunner)>,
     mut ended_writer: EventWriter<TimeRunnerEnded>,
 ) {
