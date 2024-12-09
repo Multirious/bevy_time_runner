@@ -973,7 +973,7 @@ mod test {
                 .id();
         });
 
-        world.run_system_once(time_runner_system);
+        world.run_system_once(time_runner_system).unwrap();
 
         let progress = world
             .entity(time_span_id)
@@ -1004,7 +1004,7 @@ mod test {
                 .id();
         });
 
-        world.run_system_once(time_runner_system);
+        world.run_system_once(time_runner_system).unwrap();
 
         let progress = world
             .entity(time_span_id)
