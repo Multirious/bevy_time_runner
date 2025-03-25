@@ -14,11 +14,11 @@ categories = [ "game-development" ]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy_hierarchy = { version = "0.15.0" }
-bevy_time = { version = "0.15.0", default-features = false }
-bevy_ecs = { version = "0.15.0", default-features = false }
-bevy_app = { version = "0.15.0", default-features = false, optional = true }
-bevy_reflect = { version = "0.15.0", default-features = false, optional = true }
+bevy_hierarchy = { version = "0.16.0-rc.1" }
+bevy_time = { version = "0.16.0-rc.1", default-features = false }
+bevy_ecs = { version = "0.16.0-rc.1", default-features = false }
+bevy_app = { version = "0.16.0-rc.1", default-features = false, optional = true }
+bevy_reflect = { version = "0.16.0-rc.1", default-features = false, optional = true }
 
 [features]
 default = [
@@ -29,7 +29,7 @@ bevy_reflect = [ "dep:bevy_reflect"]
 bevy_app = [ "dep:bevy_app"]
 
 [dev-dependencies]
-bevy = { version = "0.15.0" , default-features = false }
+bevy = { version = "0.16.0-rc.1" , default-features = false }
 
 [build-dependencies]
 rustc_version = "0.4.0"
