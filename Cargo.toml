@@ -24,7 +24,7 @@ default = [
   "bevy_reflect",
   "bevy_app"
 ]
-bevy_reflect = [ "dep:bevy_reflect", "bevy_ecs/bevy_reflect" ]
+bevy_reflect = [ "dep:bevy_reflect", "bevy_ecs/bevy_reflect", "bevy_app/bevy_reflect" ]
 bevy_app = [ "dep:bevy_app" ]
 
 [dev-dependencies]
