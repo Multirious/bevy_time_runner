@@ -23,9 +23,9 @@ bevy_reflect = { version = "0.16.0-rc.1", default-features = false, optional = t
 default = [
   "bevy_reflect",
   "bevy_app"
-  ]
-bevy_reflect = [ "dep:bevy_reflect"]
-bevy_app = [ "dep:bevy_app"]
+]
+bevy_reflect = [ "dep:bevy_reflect", "bevy_ecs/bevy_reflect" ]
+bevy_app = [ "dep:bevy_app" ]
 
 [dev-dependencies]
 bevy = { version = "0.16.0-rc.1" , default-features = false }
