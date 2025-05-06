@@ -2,7 +2,8 @@
 
 ## v0.4.0 - 2024-05-06
 - Migrate to bevy 0.16
-- Add flake files
+- Change Rust edition to 2024
+- Add Nix flake
 
 ## v0.3.0 - 2024-12-09
 
