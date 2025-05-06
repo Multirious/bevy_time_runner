@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.0 - 2024-05-06
+- Migrate to bevy 0.16
+- Add flake files
+
 ## v0.3.0 - 2024-12-09
 
 - Migrate to bevy 0.15
