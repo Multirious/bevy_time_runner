@@ -20,6 +20,7 @@ This crate is a core part of [`bevy_tween`](https://github.com/Multirious/bevy_t
 
 |`bevy`|`bevy_time_runner`|
 |------|------------------|
+|0.16  |0.4               |
 |0.15  |0.3               |
 |0.14  |0.2               |
 |0.13  |0.1               |
