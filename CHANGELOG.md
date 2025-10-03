@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.5.0 - 2025-10-03
+- Migrate to bevy 0.17
+
 ## v0.4.0 - 2025-05-09
 - Migrate to bevy 0.16
 - Change Rust edition to 2024
