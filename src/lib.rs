@@ -79,7 +79,7 @@ impl Plugin for TimeRunnerPlugin {
                 time_runner_system.in_set(TimeRunnerSet::Progress),
             ),
         )
-        .add_event::<TimeRunnerEnded>();
+        .add_message::<TimeRunnerEnded>();
 
         #[cfg(feature = "bevy_reflect")]
         app.register_type::<TimeRunner>()

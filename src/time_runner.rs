@@ -381,10 +381,10 @@ pub struct SkipTimeRunner;
 
 /// Fired when a time runner repeated or completed
 #[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Event)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Message, EntityEvent)]
 pub struct TimeRunnerEnded {
     /// [`TimeRunner`] that just ended
-    pub time_runner: Entity,
+    pub entity: Entity,
     /// Currently timer direction. If is [`RepeatStyle::PingPong`], the current
     /// direction will be its already changed direction.
     pub current_direction: TimeDirection,
@@ -408,7 +408,7 @@ pub fn tick_time_runner_system(
     mut commands: Commands,
     time: Res<Time>,
     mut q_time_runner: Query<(Entity, &mut TimeRunner)>,
-    mut ended_writer: EventWriter<TimeRunnerEnded>,
+    mut ended_writer: MessageWriter<TimeRunnerEnded>,
 ) {
     let delta = time.delta_secs();
     q_time_runner
@@ -433,11 +433,11 @@ pub fn tick_time_runner_system(
             };
             if send_event {
                 let event = TimeRunnerEnded {
-                    time_runner: entity,
+                    entity,
                     current_direction: time_runner.direction,
                     with_repeat: time_runner.repeat.map(|r| r.0),
                 };
-                commands.trigger_targets(event.clone(), entity);
+                commands.trigger(event.clone());
                 ended_writer.write(event);
             }
         });
