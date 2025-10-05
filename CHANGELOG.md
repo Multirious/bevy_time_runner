@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.2 - 2025-10-6
+- Fix documentation
+
+## v0.5.1 - 2025-10-03
+- Update Bevy to 0.17.2
+
 ## v0.5.0 - 2025-10-03
 - Migrate to bevy 0.17
 
