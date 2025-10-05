@@ -34,7 +34,7 @@
 //! This creates a very flexible timing system that's useful for variety of purposes.
 //!
 #![warn(missing_docs)]
-#![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
+#![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_cfg))]
 
 #[cfg(feature = "bevy_app")]
 use bevy_app::prelude::*;
