@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.6.0 - 2026-01-06
+- Breaking: rename `TimeRunnerEnded` field `entity` to `time_runner_entity`
+- Add `FixedTicks` component to tag time runners that should be updated on `Fixed` intervals
+
 ## v0.5.2 - 2025-10-6
 - Fix documentation
 
