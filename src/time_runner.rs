@@ -256,12 +256,6 @@ impl Default for TimeRunner {
     }
 }
 
-/// A tag to tag time runners that should be updated on Time<Fixed>
-#[derive(Clone, PartialEq, Component)]
-#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
-#[cfg_attr(feature = "bevy_reflect", reflect(Component))]
-pub struct FixedTicks;
-
 /// Timer repeat configuration
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
@@ -390,8 +384,7 @@ pub struct SkipTimeRunner;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Message, EntityEvent)]
 pub struct TimeRunnerEnded {
     /// [`TimeRunner`] that just ended
-    #[event_target]
-    pub time_runner_entity: Entity,
+    pub entity: Entity,
     /// Currently timer direction. If is [`RepeatStyle::PingPong`], the current
     /// direction will be its already changed direction.
     pub current_direction: TimeDirection,
@@ -410,75 +403,44 @@ impl TimeRunnerEnded {
     }
 }
 
-/// Tick non-fixed time runner then send [`TimeRunnerEnded`] event if qualified for.
+/// Tick time runner then send [`TimeRunnerEnded`] event if qualified for.
 pub fn tick_time_runner_system(
     mut commands: Commands,
     time: Res<Time>,
-    mut q_time_runner: Query<(Entity, &mut TimeRunner), Without<FixedTicks>>,
+    mut q_time_runner: Query<(Entity, &mut TimeRunner)>,
     mut ended_writer: MessageWriter<TimeRunnerEnded>,
 ) {
-    for (time_runner_entity, mut time_runner) in &mut q_time_runner {
-        tick_time_runner_inner(
-            time.delta_secs(),
-            time_runner_entity,
-            &mut time_runner,
-            &mut commands,
-            &mut ended_writer,
-        );
-    }
-}
+    let delta = time.delta_secs();
+    q_time_runner
+        .iter_mut()
+        .for_each(|(entity, mut time_runner)| {
+            if time_runner.paused || time_runner.is_completed() {
+                return;
+            }
+            let scale = time_runner.time_scale;
+            time_runner.raw_tick(delta * scale);
 
-/// Tick fixed time runner then send [`TimeRunnerEnded`] event if qualified for.
-pub fn tick_fixed_time_runner_system(
-    mut commands: Commands,
-    time: Res<Time<Fixed>>,
-    mut q_time_runner: Query<(Entity, &mut TimeRunner), With<FixedTicks>>,
-    mut ended_writer: MessageWriter<TimeRunnerEnded>,
-) {
-    for (time_runner_entity, mut time_runner) in &mut q_time_runner {
-        tick_time_runner_inner(
-            time.delta_secs(),
-            time_runner_entity,
-            &mut time_runner,
-            &mut commands,
-            &mut ended_writer,
-        );
-    }
-}
-
-fn tick_time_runner_inner(
-    delta: f32,
-    time_runner_entity: Entity,
-    time_runner: &mut TimeRunner,
-    commands: &mut Commands,
-    ended_writer: &mut MessageWriter<TimeRunnerEnded>,
-) {
-    if time_runner.paused || time_runner.is_completed() {
-        return;
-    }
-    let scale = time_runner.time_scale;
-    time_runner.raw_tick(delta * scale);
-
-    let n = time_runner.elasped().now_period;
-    let send_event = match time_runner.repeat {
-        Some((_, RepeatStyle::PingPong)) => {
-            (time_runner.direction == TimeDirection::Forward && n < 0.)
-                || (time_runner.direction == TimeDirection::Backward && n >= 1.)
-        }
-        _ => {
-            (time_runner.direction == TimeDirection::Backward && n < 0.)
-                || (time_runner.direction == TimeDirection::Forward && n >= 1.)
-        }
-    };
-    if send_event {
-        let event = TimeRunnerEnded {
-            time_runner_entity,
-            current_direction: time_runner.direction,
-            with_repeat: time_runner.repeat.map(|r| r.0),
-        };
-        commands.trigger(event.clone());
-        ended_writer.write(event);
-    }
+            let n = time_runner.elasped().now_period;
+            let send_event = match time_runner.repeat {
+                Some((_, RepeatStyle::PingPong)) => {
+                    (time_runner.direction == TimeDirection::Forward && n < 0.)
+                        || (time_runner.direction == TimeDirection::Backward && n >= 1.)
+                }
+                _ => {
+                    (time_runner.direction == TimeDirection::Backward && n < 0.)
+                        || (time_runner.direction == TimeDirection::Forward && n >= 1.)
+                }
+            };
+            if send_event {
+                let event = TimeRunnerEnded {
+                    entity,
+                    current_direction: time_runner.direction,
+                    with_repeat: time_runner.repeat.map(|r| r.0),
+                };
+                commands.trigger(event.clone());
+                ended_writer.write(event);
+            }
+        });
 }
 
 /// System for updating any [`TimeSpan`] with the correct [`TimeSpanProgress`]
@@ -678,7 +640,7 @@ pub fn time_runner_system(
             | (Forward, Before, After, Some(WrapAround)) // 2 now, max
             | (Forward, Inside, Inside, Some(WrapAround)) // 1&2 now
             | (Forward, Inside, After, Some(WrapAround)) // 2 now, max
-            | (Forward, After, Inside, Some(WrapAround)) // 1 now
+            | (Forward, After, Inside, Some(WrapAround)) // 1 now 
             | (Forward, After, After, Some(WrapAround)) // 1&2 now, max
             // | (Forward, After, Before, Some(WrapAround)) // 1
                 => {
@@ -694,7 +656,7 @@ pub fn time_runner_system(
                     Some(UseTime::Min)
                 },
             | (Backward, Before, Before, Some(WrapAround)) // 1&2 now, min
-            | (Backward, Before, Inside, Some(WrapAround)) // 1 now
+            | (Backward, Before, Inside, Some(WrapAround)) // 1 now 
             | (Backward, Inside, Before, Some(WrapAround)) // 2 now, min
             | (Backward, Inside, Inside, Some(WrapAround)) // 1&2 now
             | (Backward, After, Before, Some(WrapAround)) // 2 now, min
