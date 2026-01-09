@@ -67,7 +67,7 @@ where
     /// Repeat configuration.
     repeat: Option<(Repeat, RepeatStyle)>,
     /// The time step ticked by (for example, () for regular time or Fixed for fixed time steps)
-    #[reflect(ignore)]
+    #[cfg_attr(feature = "bevy_reflect", reflect(ignore))]
     _time_step: PhantomData<TimeStep>,
 }
 
