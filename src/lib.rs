@@ -44,45 +44,52 @@ use bevy_ecs::schedule::{InternedScheduleLabel, ScheduleLabel};
 
 mod time_runner;
 mod time_span;
+use std::marker::PhantomData;
 pub use time_runner::*;
 pub use time_span::*;
 
-/// Add [`time_runner_system`]
-/// Registers [`TimeRunner`]
+/// Add [`time_runner_system on schedule`]
+/// Registers [`TimeRunner<TimeStep>`]
 #[cfg(feature = "bevy_app")]
 #[derive(Debug)]
-pub struct TimeRunnerPlugin {
+pub struct TimeRunnerRegistrationPlugin<TimeStep = ()>
+where
+    TimeStep: Default + Send + Sync + 'static,
+{
     /// All systems will be put to this schedule
     pub schedule: InternedScheduleLabel,
+    /// The time step ticked by (for example, () for regular time or Fixed for fixed time steps)
+    _time_step: PhantomData<TimeStep>,
 }
 
 #[cfg(feature = "bevy_app")]
-impl Default for TimeRunnerPlugin {
-    fn default() -> Self {
-        TimeRunnerPlugin {
-            schedule: PostUpdate.intern(),
+impl<TimeStep> TimeRunnerRegistrationPlugin<TimeStep>
+where
+    TimeStep: Default + Send + Sync + 'static,
+{
+    /// Initializes the plugin to run on the specified schedule
+    pub fn from_schedule_intern(schedule: InternedScheduleLabel) -> Self {
+        Self {
+            schedule,
+            _time_step: PhantomData::<TimeStep>::default(),
         }
     }
 }
 
 #[cfg(feature = "bevy_app")]
+/// Registers all types and adds TimeRunnerRegistrationPlugin with default config
+pub struct TimeRunnerPlugin;
+
+#[cfg(feature = "bevy_app")]
 impl Plugin for TimeRunnerPlugin {
     fn build(&self, app: &mut App) {
-        app.configure_sets(
-            self.schedule,
-            (TimeRunnerSet::TickTimer, TimeRunnerSet::Progress).chain(),
-        )
-        .add_systems(
-            self.schedule,
-            (
-                tick_time_runner_system.in_set(TimeRunnerSet::TickTimer),
-                time_runner_system.in_set(TimeRunnerSet::Progress),
-            ),
-        )
+        app.add_plugins(TimeRunnerRegistrationPlugin::<()>::from_schedule_intern(
+            PostUpdate.intern(),
+        ))
         .add_message::<TimeRunnerEnded>();
 
         #[cfg(feature = "bevy_reflect")]
-        app.register_type::<TimeRunner>()
+        app.register_type::<TimeRunner<()>>()
             .register_type::<SkipTimeRunner>()
             .register_type::<TimeRunnerElasped>()
             .register_type::<TimeRunnerEnded>()
@@ -92,6 +99,26 @@ impl Plugin for TimeRunnerPlugin {
             .register_type::<RepeatStyle>()
             .register_type::<TimeBound>()
             .register_type::<TimeDirection>();
+    }
+}
+
+#[cfg(feature = "bevy_app")]
+impl<TimeStep> Plugin for TimeRunnerRegistrationPlugin<TimeStep>
+where
+    TimeStep: Default + Send + Sync + 'static,
+{
+    fn build(&self, app: &mut App) {
+        app.configure_sets(
+            self.schedule,
+            (TimeRunnerSet::TickTimer, TimeRunnerSet::Progress).chain(),
+        )
+        .add_systems(
+            self.schedule,
+            (
+                tick_time_runner_system::<TimeStep>.in_set(TimeRunnerSet::TickTimer),
+                time_runner_system::<TimeStep>.in_set(TimeRunnerSet::Progress),
+            ),
+        );
     }
 }
 

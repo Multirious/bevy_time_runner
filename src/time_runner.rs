@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 #[cfg(feature = "bevy_reflect")]
 use bevy_reflect::prelude::*;
 use bevy_time::prelude::*;
-use std::{cmp::Ordering, time::Duration};
+use std::{cmp::Ordering, marker::PhantomData, time::Duration};
 
 use crate::time_span::*;
 
@@ -51,7 +51,10 @@ impl TimeRunnerElasped {
 #[derive(Debug, Clone, PartialEq, Component)]
 #[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 #[cfg_attr(feature = "bevy_reflect", reflect(Component))]
-pub struct TimeRunner {
+pub struct TimeRunner<TimeStep>
+where
+    TimeStep: Default + Send + Sync + 'static,
+{
     paused: bool,
     /// The current elasped time with other useful information.
     elasped: TimeRunnerElasped,
@@ -63,11 +66,17 @@ pub struct TimeRunner {
     time_scale: f32,
     /// Repeat configuration.
     repeat: Option<(Repeat, RepeatStyle)>,
+    /// The time step ticked by (for example, () for regular time or Fixed for fixed time steps)
+    #[reflect(ignore)]
+    _time_step: PhantomData<TimeStep>,
 }
 
-impl TimeRunner {
+impl<TimeStep> TimeRunner<TimeStep>
+where
+    TimeStep: Default + Send + Sync + 'static,
+{
     /// Create new [`TimeRunner`] with this duration.
-    pub fn new(length: Duration) -> TimeRunner {
+    pub fn new(length: Duration) -> Self {
         TimeRunner {
             length,
             ..Default::default()
@@ -243,7 +252,10 @@ impl TimeRunner {
     }
 }
 
-impl Default for TimeRunner {
+impl<TimeStep> Default for TimeRunner<TimeStep>
+where
+    TimeStep: Default + Send + Sync + 'static,
+{
     fn default() -> Self {
         TimeRunner {
             paused: Default::default(),
@@ -252,6 +264,7 @@ impl Default for TimeRunner {
             direction: Default::default(),
             time_scale: 1.,
             repeat: Default::default(),
+            _time_step: PhantomData::<TimeStep>::default(),
         }
     }
 }
@@ -404,12 +417,14 @@ impl TimeRunnerEnded {
 }
 
 /// Tick time runner then send [`TimeRunnerEnded`] event if qualified for.
-pub fn tick_time_runner_system(
+pub fn tick_time_runner_system<TimeStep>(
     mut commands: Commands,
-    time: Res<Time>,
-    mut q_time_runner: Query<(Entity, &mut TimeRunner)>,
+    time: Res<Time<TimeStep>>,
+    mut q_time_runner: Query<(Entity, &mut TimeRunner<TimeStep>)>,
     mut ended_writer: MessageWriter<TimeRunnerEnded>,
-) {
+) where
+    TimeStep: Default + Send + Sync + 'static,
+{
     let delta = time.delta_secs();
     q_time_runner
         .iter_mut()
@@ -445,13 +460,18 @@ pub fn tick_time_runner_system(
 
 /// System for updating any [`TimeSpan`] with the correct [`TimeSpanProgress`]
 /// by their runner
-pub fn time_runner_system(
+pub fn time_runner_system<TimeStep>(
     mut commands: Commands,
-    mut q_runner: Query<(Entity, &mut TimeRunner, Option<&Children>), Without<SkipTimeRunner>>,
+    mut q_runner: Query<
+        (Entity, &mut TimeRunner<TimeStep>, Option<&Children>),
+        Without<SkipTimeRunner>,
+    >,
     mut q_span: Query<(Entity, Option<&mut TimeSpanProgress>, &TimeSpan)>,
-    q_added_skip: Query<(Entity, &TimeRunner, Option<&Children>), Added<SkipTimeRunner>>,
+    q_added_skip: Query<(Entity, &TimeRunner<TimeStep>, Option<&Children>), Added<SkipTimeRunner>>,
     mut runner_just_completed: Local<Vec<Entity>>,
-) {
+) where
+    TimeStep: Default + Send + Sync + 'static,
+{
     use DurationQuotient::*;
     use RepeatStyle::*;
     use TimeDirection::*;
@@ -640,7 +660,7 @@ pub fn time_runner_system(
             | (Forward, Before, After, Some(WrapAround)) // 2 now, max
             | (Forward, Inside, Inside, Some(WrapAround)) // 1&2 now
             | (Forward, Inside, After, Some(WrapAround)) // 2 now, max
-            | (Forward, After, Inside, Some(WrapAround)) // 1 now 
+            | (Forward, After, Inside, Some(WrapAround)) // 1 now
             | (Forward, After, After, Some(WrapAround)) // 1&2 now, max
             // | (Forward, After, Before, Some(WrapAround)) // 1
                 => {
@@ -656,7 +676,7 @@ pub fn time_runner_system(
                     Some(UseTime::Min)
                 },
             | (Backward, Before, Before, Some(WrapAround)) // 1&2 now, min
-            | (Backward, Before, Inside, Some(WrapAround)) // 1 now 
+            | (Backward, Before, Inside, Some(WrapAround)) // 1 now
             | (Backward, Inside, Before, Some(WrapAround)) // 2 now, min
             | (Backward, Inside, Inside, Some(WrapAround)) // 1&2 now
             | (Backward, After, Before, Some(WrapAround)) // 2 now, min
@@ -711,7 +731,7 @@ mod test {
 
     #[test]
     fn timer() {
-        let mut timer = TimeRunner::new(secs(5.));
+        let mut timer = TimeRunner::<()>::new(secs(5.));
 
         timer.raw_tick(2.5);
         assert_eq!(timer.elasped.now, 2.5);
@@ -742,7 +762,7 @@ mod test {
 
     #[test]
     fn timer_backward() {
-        let mut timer = TimeRunner::new(secs(5.));
+        let mut timer = TimeRunner::<()>::new(secs(5.));
         timer.set_direction(TimeDirection::Backward);
 
         timer.raw_tick(1.);
@@ -766,7 +786,7 @@ mod test {
 
     #[test]
     fn timer_wrap_around() {
-        let mut timer = TimeRunner::new(secs(5.));
+        let mut timer = TimeRunner::<()>::new(secs(5.));
         timer.set_repeat(Some((Repeat::Infinitely, RepeatStyle::WrapAround)));
 
         timer.raw_tick(1.);
@@ -800,7 +820,7 @@ mod test {
 
     #[test]
     fn timer_backward_wrap_around() {
-        let mut timer = TimeRunner::new(secs(5.));
+        let mut timer = TimeRunner::<()>::new(secs(5.));
         timer.set_repeat(Some((Repeat::Infinitely, RepeatStyle::WrapAround)));
         timer.set_direction(TimeDirection::Backward);
 
@@ -823,7 +843,7 @@ mod test {
 
     #[test]
     fn timer_wrap_around_times() {
-        let mut timer = TimeRunner::new(secs(5.));
+        let mut timer = TimeRunner::<()>::new(secs(5.));
         timer.set_repeat(Some((Repeat::times(2), RepeatStyle::WrapAround)));
 
         timer.raw_tick(4.);
@@ -884,7 +904,7 @@ mod test {
 
     #[test]
     fn timer_backward_wrap_around_times() {
-        let mut timer = TimeRunner::new(secs(5.));
+        let mut timer = TimeRunner::<()>::new(secs(5.));
         timer.set_repeat(Some((Repeat::times(2), RepeatStyle::WrapAround)));
         timer.set_direction(TimeDirection::Backward);
 
@@ -924,7 +944,7 @@ mod test {
 
     #[test]
     fn timer_ping_pong() {
-        let mut timer = TimeRunner::new(secs(5.));
+        let mut timer = TimeRunner::<()>::new(secs(5.));
         timer.set_repeat(Some((Repeat::Infinitely, RepeatStyle::PingPong)));
 
         timer.raw_tick(3.);
@@ -963,7 +983,7 @@ mod test {
     fn timer_big_tick() {
         let mut world = World::default();
 
-        let mut time_runner = TimeRunner::new(secs(10.));
+        let mut time_runner = TimeRunner::<()>::new(secs(10.));
         time_runner.tick(10.);
         let mut time_span_id = Entity::PLACEHOLDER;
         world.spawn(time_runner).with_children(|c| {
@@ -994,7 +1014,7 @@ mod test {
     fn timer_zero_length_span() {
         let mut world = World::default();
 
-        let mut time_runner = TimeRunner::new(secs(4.));
+        let mut time_runner = TimeRunner::<()>::new(secs(4.));
         time_runner.tick(4.);
         let mut time_span_id = Entity::PLACEHOLDER;
         world.spawn(time_runner).with_children(|c| {
