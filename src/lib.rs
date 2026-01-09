@@ -20,7 +20,7 @@
 //! # let mut commands = Commands::new(&mut queue, &world);
 //! #
 //! commands
-//!     .spawn(TimeRunner::new(secs(10)))
+//!     .spawn(TimeRunner::<()>::new(secs(10)))
 //!     .with_children(|c| {
 //!         c.spawn(TimeSpan::try_from(secs(0)..secs(3)).unwrap());
 //!         c.spawn(TimeSpan::try_from(secs(3)..secs(7)).unwrap());
