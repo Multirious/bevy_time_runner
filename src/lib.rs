@@ -78,13 +78,24 @@ where
 
 #[cfg(feature = "bevy_app")]
 /// Registers all types and adds TimeRunnerRegistrationPlugin with default config
-pub struct TimeRunnerPlugin;
+pub struct TimeRunnerPlugin {
+    /// The schedule where the default time runners will be registered (TimerRunner<()>)
+    pub default_time_schedule: InternedScheduleLabel,
+}
+
+impl Default for TimeRunnerPlugin {
+    fn default() -> Self {
+        TimeRunnerPlugin {
+            default_time_schedule: PostUpdate.intern(),
+        }
+    }
+}
 
 #[cfg(feature = "bevy_app")]
 impl Plugin for TimeRunnerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(TimeRunnerRegistrationPlugin::<()>::from_schedule_intern(
-            PostUpdate.intern(),
+            self.default_time_schedule,
         ))
         .add_message::<TimeRunnerEnded>();
 
