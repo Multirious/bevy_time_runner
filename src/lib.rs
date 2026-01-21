@@ -83,6 +83,7 @@ pub struct TimeRunnerPlugin {
     pub default_time_schedule: InternedScheduleLabel,
 }
 
+#[cfg(feature = "bevy_app")]
 impl Default for TimeRunnerPlugin {
     fn default() -> Self {
         TimeRunnerPlugin {
