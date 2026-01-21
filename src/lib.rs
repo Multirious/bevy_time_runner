@@ -110,7 +110,8 @@ impl Plugin for TimeRunnerPlugin {
             .register_type::<Repeat>()
             .register_type::<RepeatStyle>()
             .register_type::<TimeBound>()
-            .register_type::<TimeDirection>();
+            .register_type::<TimeDirection>()
+            .register_type::<TimeRunnerMarker>();
     }
 }
 

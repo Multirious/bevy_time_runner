@@ -51,6 +51,7 @@ impl TimeRunnerElasped {
 #[derive(Debug, Clone, PartialEq, Component)]
 #[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 #[cfg_attr(feature = "bevy_reflect", reflect(Component))]
+#[require(TimeRunnerMarker)]
 pub struct TimeRunner<TimeStep = ()>
 where
     TimeStep: Default + Send + Sync + 'static,
@@ -70,6 +71,12 @@ where
     #[cfg_attr(feature = "bevy_reflect", reflect(ignore))]
     _time_step: PhantomData<TimeStep>,
 }
+
+/// A marker component attached to all TimeRunners no matter their TimeStep, for ease of querying
+#[derive(Debug, Clone, PartialEq, Component, Default)]
+#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
+#[cfg_attr(feature = "bevy_reflect", reflect(Component))]
+pub struct TimeRunnerMarker;
 
 impl<TimeStep> TimeRunner<TimeStep>
 where
