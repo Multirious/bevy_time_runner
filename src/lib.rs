@@ -89,7 +89,7 @@ impl Plugin for TimeRunnerPlugin {
         .add_message::<TimeRunnerEnded>();
 
         #[cfg(feature = "bevy_reflect")]
-        app.register_type::<TimeRunner<()>>()
+        app.register_type::<TimeRunner>()
             .register_type::<SkipTimeRunner>()
             .register_type::<TimeRunnerElasped>()
             .register_type::<TimeRunnerEnded>()
