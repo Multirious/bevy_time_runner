@@ -51,7 +51,6 @@ impl TimeRunnerElasped {
 #[derive(Debug, Clone, PartialEq, Component)]
 #[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 #[cfg_attr(feature = "bevy_reflect", reflect(Component))]
-#[require(TimeStepMarker<()>)]
 pub struct TimeRunner {
     paused: bool,
     /// The current elasped time with other useful information.
@@ -66,7 +65,7 @@ pub struct TimeRunner {
     repeat: Option<(Repeat, RepeatStyle)>,
 }
 
-/// A marker component attached to all TimeRunners no matter their TimeStep, for ease of querying
+/// A marker component attached to TimeRunner to make the time delta applied to it based on a specific TimeStep
 #[derive(Debug, Clone, PartialEq, Component, Default)]
 pub struct TimeStepMarker<TimeStep>
 where

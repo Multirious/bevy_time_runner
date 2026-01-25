@@ -48,10 +48,10 @@ use std::marker::PhantomData;
 pub use time_runner::*;
 pub use time_span::*;
 
-/// Add [`time_runner_system on schedule`]
+/// Add [`time_runner_system::<TimeStep>`]  on schedule
 #[cfg(feature = "bevy_app")]
 #[derive(Debug)]
-pub struct TimeRunnerRegistrationPlugin<TimeStep = ()>
+pub struct TimeRunnerSystemsPlugin<TimeStep = ()>
 where
     TimeStep: Default + Send + Sync + 'static,
 {
@@ -62,7 +62,7 @@ where
 }
 
 #[cfg(feature = "bevy_app")]
-impl<TimeStep> TimeRunnerRegistrationPlugin<TimeStep>
+impl<TimeStep> TimeRunnerSystemsPlugin<TimeStep>
 where
     TimeStep: Default + Send + Sync + 'static,
 {
@@ -79,14 +79,14 @@ where
 /// Registers all types and adds TimeRunnerRegistrationPlugin with default config
 pub struct TimeRunnerPlugin {
     /// The schedule where the default time runners will be registered (TimerRunner<()>)
-    pub default_time_schedule: InternedScheduleLabel,
+    pub schedule: InternedScheduleLabel,
 }
 
 #[cfg(feature = "bevy_app")]
 impl Default for TimeRunnerPlugin {
     fn default() -> Self {
         TimeRunnerPlugin {
-            default_time_schedule: PostUpdate.intern(),
+            schedule: PostUpdate.intern(),
         }
     }
 }
@@ -94,8 +94,8 @@ impl Default for TimeRunnerPlugin {
 #[cfg(feature = "bevy_app")]
 impl Plugin for TimeRunnerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(TimeRunnerRegistrationPlugin::<()>::from_schedule_intern(
-            self.default_time_schedule,
+        app.add_plugins(TimeRunnerSystemsPlugin::<()>::from_schedule_intern(
+            self.schedule,
         ))
         .add_message::<TimeRunnerEnded>();
 
@@ -114,7 +114,7 @@ impl Plugin for TimeRunnerPlugin {
 }
 
 #[cfg(feature = "bevy_app")]
-impl<TimeStep> Plugin for TimeRunnerRegistrationPlugin<TimeStep>
+impl<TimeStep> Plugin for TimeRunnerSystemsPlugin<TimeStep>
 where
     TimeStep: Default + Send + Sync + 'static,
 {
