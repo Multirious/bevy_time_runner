@@ -51,11 +51,8 @@ impl TimeRunnerElasped {
 #[derive(Debug, Clone, PartialEq, Component)]
 #[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 #[cfg_attr(feature = "bevy_reflect", reflect(Component))]
-#[require(TimeRunnerMarker)]
-pub struct TimeRunner<TimeStep = ()>
-where
-    TimeStep: Default + Send + Sync + 'static,
-{
+#[require(TimeStepMarker<()>)]
+pub struct TimeRunner {
     paused: bool,
     /// The current elasped time with other useful information.
     elasped: TimeRunnerElasped,
@@ -67,21 +64,18 @@ where
     time_scale: f32,
     /// Repeat configuration.
     repeat: Option<(Repeat, RepeatStyle)>,
-    /// The time step ticked by (for example, () for regular time or Fixed for fixed time steps)
-    #[cfg_attr(feature = "bevy_reflect", reflect(ignore))]
-    _time_step: PhantomData<TimeStep>,
 }
 
 /// A marker component attached to all TimeRunners no matter their TimeStep, for ease of querying
 #[derive(Debug, Clone, PartialEq, Component, Default)]
-#[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
-#[cfg_attr(feature = "bevy_reflect", reflect(Component))]
-pub struct TimeRunnerMarker;
-
-impl<TimeStep> TimeRunner<TimeStep>
+pub struct TimeStepMarker<TimeStep>
 where
     TimeStep: Default + Send + Sync + 'static,
 {
+    _time_step: PhantomData<TimeStep>,
+}
+
+impl TimeRunner {
     /// Create new [`TimeRunner`] with this duration.
     pub fn new(length: Duration) -> Self {
         TimeRunner {
@@ -259,10 +253,7 @@ where
     }
 }
 
-impl<TimeStep> Default for TimeRunner<TimeStep>
-where
-    TimeStep: Default + Send + Sync + 'static,
-{
+impl Default for TimeRunner {
     fn default() -> Self {
         TimeRunner {
             paused: Default::default(),
@@ -271,7 +262,6 @@ where
             direction: Default::default(),
             time_scale: 1.,
             repeat: Default::default(),
-            _time_step: PhantomData::<TimeStep>::default(),
         }
     }
 }
@@ -427,7 +417,7 @@ impl TimeRunnerEnded {
 pub fn tick_time_runner_system<TimeStep>(
     mut commands: Commands,
     time: Res<Time<TimeStep>>,
-    mut q_time_runner: Query<(Entity, &mut TimeRunner<TimeStep>)>,
+    mut q_time_runner: Query<(Entity, &mut TimeRunner), With<TimeStepMarker<TimeStep>>>,
     mut ended_writer: MessageWriter<TimeRunnerEnded>,
 ) where
     TimeStep: Default + Send + Sync + 'static,
@@ -470,11 +460,14 @@ pub fn tick_time_runner_system<TimeStep>(
 pub fn time_runner_system<TimeStep>(
     mut commands: Commands,
     mut q_runner: Query<
-        (Entity, &mut TimeRunner<TimeStep>, Option<&Children>),
-        Without<SkipTimeRunner>,
+        (Entity, &mut TimeRunner, Option<&Children>),
+        (Without<SkipTimeRunner>, With<TimeStepMarker<TimeStep>>),
     >,
     mut q_span: Query<(Entity, Option<&mut TimeSpanProgress>, &TimeSpan)>,
-    q_added_skip: Query<(Entity, &TimeRunner<TimeStep>, Option<&Children>), Added<SkipTimeRunner>>,
+    q_added_skip: Query<
+        (Entity, &TimeRunner, Option<&Children>),
+        (Added<SkipTimeRunner>, With<TimeStepMarker<TimeStep>>),
+    >,
     mut runner_just_completed: Local<Vec<Entity>>,
 ) where
     TimeStep: Default + Send + Sync + 'static,
