@@ -731,7 +731,7 @@ mod test {
 
     #[test]
     fn timer() {
-        let mut timer: TimeRunner = TimeRunner::new(secs(5.));
+        let mut timer = TimeRunner::new(secs(5.));
 
         timer.raw_tick(2.5);
         assert_eq!(timer.elasped.now, 2.5);
@@ -762,7 +762,7 @@ mod test {
 
     #[test]
     fn timer_backward() {
-        let mut timer: TimeRunner = TimeRunner::new(secs(5.));
+        let mut timer = TimeRunner::new(secs(5.));
         timer.set_direction(TimeDirection::Backward);
 
         timer.raw_tick(1.);
@@ -786,7 +786,7 @@ mod test {
 
     #[test]
     fn timer_wrap_around() {
-        let mut timer: TimeRunner = TimeRunner::new(secs(5.));
+        let mut timer = TimeRunner::new(secs(5.));
         timer.set_repeat(Some((Repeat::Infinitely, RepeatStyle::WrapAround)));
 
         timer.raw_tick(1.);
@@ -820,7 +820,7 @@ mod test {
 
     #[test]
     fn timer_backward_wrap_around() {
-        let mut timer: TimeRunner = TimeRunner::new(secs(5.));
+        let mut timer = TimeRunner::new(secs(5.));
         timer.set_repeat(Some((Repeat::Infinitely, RepeatStyle::WrapAround)));
         timer.set_direction(TimeDirection::Backward);
 
@@ -843,7 +843,7 @@ mod test {
 
     #[test]
     fn timer_wrap_around_times() {
-        let mut timer: TimeRunner = TimeRunner::new(secs(5.));
+        let mut timer = TimeRunner::new(secs(5.));
         timer.set_repeat(Some((Repeat::times(2), RepeatStyle::WrapAround)));
 
         timer.raw_tick(4.);
@@ -904,7 +904,7 @@ mod test {
 
     #[test]
     fn timer_backward_wrap_around_times() {
-        let mut timer: TimeRunner = TimeRunner::new(secs(5.));
+        let mut timer = TimeRunner::new(secs(5.));
         timer.set_repeat(Some((Repeat::times(2), RepeatStyle::WrapAround)));
         timer.set_direction(TimeDirection::Backward);
 
@@ -944,7 +944,7 @@ mod test {
 
     #[test]
     fn timer_ping_pong() {
-        let mut timer: TimeRunner = TimeRunner::new(secs(5.));
+        let mut timer = TimeRunner::new(secs(5.));
         timer.set_repeat(Some((Repeat::Infinitely, RepeatStyle::PingPong)));
 
         timer.raw_tick(3.);
@@ -983,7 +983,7 @@ mod test {
     fn timer_big_tick() {
         let mut world = World::default();
 
-        let mut time_runner: TimeRunner = TimeRunner::new(secs(10.));
+        let mut time_runner = TimeRunner::new(secs(10.));
         time_runner.tick(10.);
         let mut time_span_id = Entity::PLACEHOLDER;
         world.spawn(time_runner).with_children(|c| {
@@ -1014,7 +1014,7 @@ mod test {
     fn timer_zero_length_span() {
         let mut world = World::default();
 
-        let mut time_runner: TimeRunner = TimeRunner::new(secs(4.));
+        let mut time_runner = TimeRunner::new(secs(4.));
         time_runner.tick(4.);
         let mut time_span_id = Entity::PLACEHOLDER;
         world.spawn(time_runner).with_children(|c| {

@@ -49,7 +49,6 @@ pub use time_runner::*;
 pub use time_span::*;
 
 /// Add [`time_runner_system on schedule`]
-/// Registers [`TimeRunner<TimeStep>`]
 #[cfg(feature = "bevy_app")]
 #[derive(Debug)]
 pub struct TimeRunnerRegistrationPlugin<TimeStep = ()>
