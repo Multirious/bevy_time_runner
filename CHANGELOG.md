@@ -2,6 +2,10 @@
 
 ## Unreleased - XXXX-XX-XX
 - Migrate to bevy 0.18
+- Update flake
+  - Use latest instead of a version for stableRust in flake.nix
+  - `nix flake update`
+  - Remove flake-utils dependency from flake.nix
 
 ## v0.5.2 - 2025-10-6
 - Fix documentation
