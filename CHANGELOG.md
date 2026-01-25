@@ -1,5 +1,8 @@
 # Changelog
 
+## Unreleased - XXXX-XX-XX
+- Migrate to bevy 0.18
+
 ## v0.5.2 - 2025-10-6
 - Fix documentation
 
