@@ -985,11 +985,13 @@ mod test {
         let mut time_runner = TimeRunner::new(secs(10.));
         time_runner.tick(10.);
         let mut time_span_id = Entity::PLACEHOLDER;
-        world.spawn(time_runner).with_children(|c| {
-            time_span_id = c
-                .spawn(TimeSpan::try_from(secs(4.)..secs(6.)).unwrap())
-                .id();
-        });
+        world
+            .spawn((time_runner, TimeStepMarker::<()>::default()))
+            .with_children(|c| {
+                time_span_id = c
+                    .spawn(TimeSpan::try_from(secs(4.)..secs(6.)).unwrap())
+                    .id();
+            });
 
         world.run_system_once(time_runner_system::<()>).unwrap();
 
@@ -1016,11 +1018,13 @@ mod test {
         let mut time_runner = TimeRunner::new(secs(4.));
         time_runner.tick(4.);
         let mut time_span_id = Entity::PLACEHOLDER;
-        world.spawn(time_runner).with_children(|c| {
-            time_span_id = c
-                .spawn(TimeSpan::try_from(secs(2.)..=secs(2.)).unwrap())
-                .id();
-        });
+        world
+            .spawn((time_runner, TimeStepMarker::<()>::default()))
+            .with_children(|c| {
+                time_span_id = c
+                    .spawn(TimeSpan::try_from(secs(2.)..=secs(2.)).unwrap())
+                    .id();
+            });
 
         world.run_system_once(time_runner_system::<()>).unwrap();
 
