@@ -51,6 +51,7 @@ impl TimeRunnerElasped {
 #[derive(Debug, Clone, PartialEq, Component)]
 #[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 #[cfg_attr(feature = "bevy_reflect", reflect(Component))]
+#[cfg_attr(feature = "debug", component(on_add = on_time_runner_added))]
 pub struct TimeRunner {
     paused: bool,
     /// The current elasped time with other useful information.
@@ -63,6 +64,34 @@ pub struct TimeRunner {
     time_scale: f32,
     /// Repeat configuration.
     repeat: Option<(Repeat, RepeatStyle)>,
+}
+
+#[cfg(feature = "debug")]
+fn on_time_runner_added(
+    world: bevy_ecs::world::DeferredWorld<'_>,
+    hook_context: bevy_ecs::lifecycle::HookContext,
+) {
+    use bevy_log::{error, warn};
+    let Some(debug_info) = world.get_resource::<crate::TimeRunnerDebugInfo>() else {
+        return;
+    };
+    let entity = match world.get_entity(hook_context.entity) {
+        Ok(entity) => entity,
+        Err(e) => {
+            error!(
+                "Attempted to get entity {} but got error: {}",
+                hook_context.entity, e
+            );
+            return;
+        }
+    };
+    let has_any_time_step = debug_info.time_steps.iter().any(|t| entity.contains_id(*t));
+    if !has_any_time_step {
+        warn!(
+            "TimeRunner {} does not have any `TimeStepMarker<T>` component. This may cause problems. If this warning is false, you can disable it by removing TimeRunnerDebugPlugin or check its documentation.",
+            hook_context.entity
+        );
+    }
 }
 
 /// A marker component attached to TimeRunner to make the time delta applied to it based on a specific TimeStep
