@@ -70,7 +70,7 @@ where
     pub fn from_schedule_intern(schedule: InternedScheduleLabel) -> Self {
         Self {
             schedule,
-            _time_step: PhantomData::<TimeStep>::default(),
+            _time_step: Default::default(),
         }
     }
 }
