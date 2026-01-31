@@ -1072,4 +1072,22 @@ mod test {
             }
         );
     }
+
+    #[cfg(feature = "debug")]
+    #[test]
+    #[ignore = "This test has to be checked manually for warning"]
+    fn time_runner_with_no_time_steps_warning() {
+        let mut app = bevy_app::App::new();
+        app.add_plugins((
+            crate::TimeRunnerDebugPlugin::default(),
+            bevy_log::LogPlugin::default(),
+        ));
+        let world = app.world_mut();
+
+        println!("This should have no warning");
+        world.spawn((TimeRunner::default(), TimeStepMarker::<()>::default())); // Expected no warning here.
+
+        println!("This should have warnings");
+        world.spawn(TimeRunner::default()); // Expected warning here.
+    }
 }
