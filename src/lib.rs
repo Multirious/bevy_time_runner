@@ -48,7 +48,7 @@ use std::marker::PhantomData;
 pub use time_runner::*;
 pub use time_span::*;
 
-/// Add [`time_runner_system::<TimeStep>`]  on schedule
+/// Add [`time_runner_system::<TimeStep>`] on schedule
 #[cfg(feature = "bevy_app")]
 #[derive(Debug)]
 pub struct TimeRunnerSystemsPlugin<TimeStep = ()>
