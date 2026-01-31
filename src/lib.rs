@@ -38,12 +38,16 @@
 
 #[cfg(feature = "bevy_app")]
 use bevy_app::prelude::*;
+#[cfg(feature = "debug")]
+use bevy_ecs::component::ComponentId;
 use bevy_ecs::prelude::*;
 #[cfg(feature = "bevy_app")]
 use bevy_ecs::schedule::{InternedScheduleLabel, ScheduleLabel};
 
 mod time_runner;
 mod time_span;
+#[cfg(feature = "debug")]
+use std::any::TypeId;
 use std::marker::PhantomData;
 pub use time_runner::*;
 pub use time_span::*;
@@ -140,4 +144,78 @@ pub enum TimeRunnerSet {
     TickTimer,
     /// Systems responsible for updating [`TimeSpanProgress`]
     Progress,
+}
+
+/// Includes infos at runtime for debugging TimeRunner related issues.
+/// This is inserted via [`TimeRunnerDebugPlugin`].
+#[cfg(feature = "debug")]
+#[derive(Debug, Default, Clone, Resource)]
+pub struct TimeRunnerDebugInfo {
+    time_steps: Vec<ComponentId>,
+}
+
+/// Debugs TimeRunner related issues
+///
+/// By default, this print warnings for missing [`TimeStepMarker<T>`] where `T` is:
+/// - `()` (The default time step),
+/// - [`bevy_time::Fixed`],
+/// - [`bevy_time::Real`] and
+/// - [`bevy_time::Virtual`].
+///
+/// If you have addtional custom context, you may add it via [`Self::add_time_step`].
+#[cfg(feature = "debug")]
+pub struct TimeRunnerDebugPlugin {
+    time_step_markers: Vec<(TypeId, &'static str)>,
+}
+
+#[cfg(feature = "debug")]
+impl Default for TimeRunnerDebugPlugin {
+    fn default() -> Self {
+        let mut a = TimeRunnerDebugPlugin {
+            time_step_markers: Vec::new(),
+        };
+        a.add_time_step::<()>();
+        a.add_time_step::<bevy_time::Fixed>();
+        a.add_time_step::<bevy_time::Real>();
+        a.add_time_step::<bevy_time::Virtual>();
+        a
+    }
+}
+
+#[cfg(feature = "debug")]
+impl TimeRunnerDebugPlugin {
+    /// Enables a [`bevy_time::Time`]'s specific context to be checked.
+    pub fn add_time_step<TimeStep>(&mut self)
+    where
+        TimeStep: Default + Send + Sync + 'static,
+    {
+        self.time_step_markers.push((
+            TypeId::of::<TimeStepMarker<TimeStep>>(),
+            std::any::type_name::<TimeStepMarker<TimeStep>>(),
+        ));
+    }
+}
+
+#[cfg(feature = "debug")]
+impl Plugin for TimeRunnerDebugPlugin {
+    /// # Panics
+    ///
+    /// This method panics if a requested component to be debug haven't been registered.
+    fn build(&self, app: &mut App) {
+        let mut info = TimeRunnerDebugInfo::default();
+        let world_mut = app.world_mut();
+        world_mut.register_component::<TimeStepMarker<()>>();
+        world_mut.register_component::<TimeStepMarker<bevy_time::Fixed>>();
+        world_mut.register_component::<TimeStepMarker<bevy_time::Real>>();
+        world_mut.register_component::<TimeStepMarker<bevy_time::Virtual>>();
+        for (type_id, type_name) in &self.time_step_markers {
+            let Some(component_id) = app.world().components().get_id(*type_id) else {
+                panic!(
+                    "{type_name} have not been registered as a componenet yet. It is required for `TimeRunnerDebugPlugin`."
+                )
+            };
+            info.time_steps.push(component_id);
+        }
+        app.world_mut().insert_resource(info);
+    }
 }
