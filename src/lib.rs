@@ -104,10 +104,12 @@ impl Default for TimeRunnerPlugin {
 #[cfg(feature = "bevy_app")]
 impl Plugin for TimeRunnerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(TimeRunnerSystemsPlugin::<()>::from_schedule_intern(
-            self.schedule,
-        ))
-        .add_message::<TimeRunnerEnded>();
+        if !app.is_plugin_added::<TimeRunnerSystemsPlugin<()>>() {
+            app.add_plugins(TimeRunnerSystemsPlugin::<()>::from_schedule_intern(
+                self.schedule,
+            ));
+        }
+        app.add_message::<TimeRunnerEnded>();
 
         #[cfg(feature = "bevy_reflect")]
         app.register_type::<TimeRunner>()
