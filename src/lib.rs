@@ -84,6 +84,10 @@ where
 pub struct TimeRunnerPlugin {
     /// The schedule where the default time runners will be registered (TimerRunner<()>)
     pub schedule: InternedScheduleLabel,
+    /// Enables [`TimeRunnerDebugPlugin`] with default configuration.
+    /// You may manually insert [`TimeRunnerDebugPlugin`] for custom configuration.
+    #[cfg(feature = "debug")]
+    pub enable_debug: bool,
 }
 
 #[cfg(feature = "bevy_app")]
@@ -91,6 +95,8 @@ impl Default for TimeRunnerPlugin {
     fn default() -> Self {
         TimeRunnerPlugin {
             schedule: PostUpdate.intern(),
+            #[cfg(feature = "debug")]
+            enable_debug: true,
         }
     }
 }
@@ -114,6 +120,11 @@ impl Plugin for TimeRunnerPlugin {
             .register_type::<RepeatStyle>()
             .register_type::<TimeBound>()
             .register_type::<TimeDirection>();
+
+        #[cfg(feature = "debug")]
+        if self.enable_debug && !app.is_plugin_added::<TimeRunnerDebugPlugin>() {
+            app.add_plugins(TimeRunnerDebugPlugin::default());
+        }
     }
 }
 
