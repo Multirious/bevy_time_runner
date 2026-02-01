@@ -443,7 +443,7 @@ impl TimeRunnerEnded {
 
 /// Tag the chilren of newely created [`TimeRunner`]s with their [`TimeContext<TimeCtx>`] to ease querying
 pub fn tag_time_runner_children_with_context<TimeCtx>(
-    newly_created_time_runners: Query<&Children, (With<TimeRunner>, With<TimeContext<TimeCtx>>)>,
+    newly_created_time_runners: Query<&Children, (Added<TimeRunner>, With<TimeContext<TimeCtx>>)>,
     mut commands: Commands,
 ) where
     TimeCtx: Default + Send + Sync + 'static,
