@@ -139,7 +139,12 @@ where
     fn build(&self, app: &mut App) {
         app.configure_sets(
             self.schedule,
-            (TimeRunnerSet::TickTimer, TimeRunnerSet::Progress).chain(),
+            (
+                TimeRunnerSet::Tagging,
+                TimeRunnerSet::TickTimer,
+                TimeRunnerSet::Progress,
+            )
+                .chain(),
         )
         .add_systems(
             self.schedule,
