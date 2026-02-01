@@ -6,7 +6,10 @@
   - Use latest instead of a version for stableRust in flake.nix
   - `nix flake update`
   - Remove flake-utils dependency from flake.nix
--
+- You may now register `TimeRunnerSystemsPlugin<TimeCtx>` with a schedule of your choice (using `from_schedule_intern`) to enable creation, ticking and management of time runners of different time steps
+  - Add `TimeContext<TimeCtx>` component to mark the time step each time runner uses
+  - Automatically tag children of newly-created time runners on `TimeRunnerSet::Tagging`
+  - Tick each time runner, send events and register system sets on the provided schedule and time step
 
 ## v0.5.2 - 2025-10-6
 - Fix documentation
