@@ -98,7 +98,7 @@ fn on_time_runner_added(
 #[derive(Debug, Clone, PartialEq, Component, Default)]
 pub struct TimeContext<TimeCtx>
 where
-    TimeCtx: Default + Send + Sync + 'static,
+    TimeCtx: Default + Clone + Send + Sync + 'static,
 {
     _time_step: PhantomData<TimeCtx>,
 }
@@ -441,6 +441,22 @@ impl TimeRunnerEnded {
     }
 }
 
+/// Tag the chilren of newely created [`TimeRunner`]s with their [`TimeContext<TimeCtx>`] to ease querying
+pub fn tag_time_runner_children_with_context<TimeCtx>(
+    newly_created_time_runners: Query<(&Children, &TimeContext<TimeCtx>), With<TimeRunner>>,
+    mut commands: Commands,
+) where
+    TimeCtx: Default + Clone + Send + Sync + 'static,
+{
+    for (children, time_context) in &newly_created_time_runners {
+        for child_entity in children.iter() {
+            commands
+                .entity(child_entity)
+                .try_insert((*time_context).clone());
+        }
+    }
+}
+
 /// Tick time runner then send [`TimeRunnerEnded`] event if qualified for.
 pub fn tick_time_runner_system<TimeCtx>(
     mut commands: Commands,
@@ -448,7 +464,7 @@ pub fn tick_time_runner_system<TimeCtx>(
     mut q_time_runner: Query<(Entity, &mut TimeRunner), With<TimeContext<TimeCtx>>>,
     mut ended_writer: MessageWriter<TimeRunnerEnded>,
 ) where
-    TimeCtx: Default + Send + Sync + 'static,
+    TimeCtx: Default + Clone + Send + Sync + 'static,
 {
     let delta = time.delta_secs();
     q_time_runner
@@ -498,7 +514,7 @@ pub fn time_runner_system<TimeCtx>(
     >,
     mut runner_just_completed: Local<Vec<Entity>>,
 ) where
-    TimeCtx: Default + Send + Sync + 'static,
+    TimeCtx: Default + Clone + Send + Sync + 'static,
 {
     use DurationQuotient::*;
     use RepeatStyle::*;

@@ -57,7 +57,7 @@ pub use time_span::*;
 #[derive(Debug)]
 pub struct TimeRunnerSystemsPlugin<TimeCtx = ()>
 where
-    TimeCtx: Default + Send + Sync + 'static,
+    TimeCtx: Default + Clone + Send + Sync + 'static,
 {
     /// All systems will be put to this schedule
     pub schedule: InternedScheduleLabel,
@@ -68,7 +68,7 @@ where
 #[cfg(feature = "bevy_app")]
 impl<TimeCtx> TimeRunnerSystemsPlugin<TimeCtx>
 where
-    TimeCtx: Default + Send + Sync + 'static,
+    TimeCtx: Default + Clone + Send + Sync + 'static,
 {
     /// Initializes the plugin to run on the specified schedule
     pub fn from_schedule_intern(schedule: InternedScheduleLabel) -> Self {
@@ -133,7 +133,7 @@ impl Plugin for TimeRunnerPlugin {
 #[cfg(feature = "bevy_app")]
 impl<TimeCtx> Plugin for TimeRunnerSystemsPlugin<TimeCtx>
 where
-    TimeCtx: Default + Send + Sync + 'static,
+    TimeCtx: Default + Clone + Send + Sync + 'static,
 {
     fn build(&self, app: &mut App) {
         app.configure_sets(
@@ -143,6 +143,7 @@ where
         .add_systems(
             self.schedule,
             (
+                tag_time_runner_children_with_context::<TimeCtx>.in_set(TimeRunnerSet::Tagging),
                 tick_time_runner_system::<TimeCtx>.in_set(TimeRunnerSet::TickTimer),
                 time_runner_system::<TimeCtx>.in_set(TimeRunnerSet::Progress),
             ),
@@ -153,6 +154,8 @@ where
 /// System set in this crate
 #[derive(Debug, PartialEq, Eq, Hash, Clone, SystemSet)]
 pub enum TimeRunnerSet {
+    /// Systems responsible for automatic tagging of time runner children
+    Tagging,
     /// Systems responsible for ticking timer
     TickTimer,
     /// Systems responsible for updating [`TimeSpanProgress`]
@@ -200,7 +203,7 @@ impl TimeRunnerDebugPlugin {
     /// Enables a [`bevy_time::Time`]'s specific context to be checked.
     pub fn add_time_step<TimeCtx>(&mut self)
     where
-        TimeCtx: Default + Send + Sync + 'static,
+        TimeCtx: Default + Clone + Send + Sync + 'static,
     {
         self.time_step_markers.push((
             TypeId::of::<TimeContext<TimeCtx>>(),
