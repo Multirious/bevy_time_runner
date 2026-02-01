@@ -48,6 +48,7 @@ mod time_runner;
 mod time_span;
 #[cfg(feature = "debug")]
 use std::any::TypeId;
+#[cfg(feature = "bevy_app")]
 use std::marker::PhantomData;
 pub use time_runner::*;
 pub use time_span::*;
@@ -212,8 +213,7 @@ impl TimeRunnerDebugPlugin {
     }
 }
 
-#[cfg(feature = "debug")]
-#[cfg(feature = "bevy_app")]
+⁨#[cfg(all(feature = "debug", feature = "bevy_app"))]⁩
 impl Plugin for TimeRunnerDebugPlugin {
     /// # Panics
     ///
