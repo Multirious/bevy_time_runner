@@ -52,23 +52,23 @@ use std::marker::PhantomData;
 pub use time_runner::*;
 pub use time_span::*;
 
-/// Add [`time_runner_system::<TimeStep>`] on schedule
+/// Add [`time_runner_system::<TimeCtx>`] on schedule
 #[cfg(feature = "bevy_app")]
 #[derive(Debug)]
-pub struct TimeRunnerSystemsPlugin<TimeStep = ()>
+pub struct TimeRunnerSystemsPlugin<TimeCtx = ()>
 where
-    TimeStep: Default + Send + Sync + 'static,
+    TimeCtx: Default + Send + Sync + 'static,
 {
     /// All systems will be put to this schedule
     pub schedule: InternedScheduleLabel,
     /// The time step ticked by (for example, () for regular time or Fixed for fixed time steps)
-    _time_step: PhantomData<TimeStep>,
+    _time_step: PhantomData<TimeCtx>,
 }
 
 #[cfg(feature = "bevy_app")]
-impl<TimeStep> TimeRunnerSystemsPlugin<TimeStep>
+impl<TimeCtx> TimeRunnerSystemsPlugin<TimeCtx>
 where
-    TimeStep: Default + Send + Sync + 'static,
+    TimeCtx: Default + Send + Sync + 'static,
 {
     /// Initializes the plugin to run on the specified schedule
     pub fn from_schedule_intern(schedule: InternedScheduleLabel) -> Self {
@@ -131,9 +131,9 @@ impl Plugin for TimeRunnerPlugin {
 }
 
 #[cfg(feature = "bevy_app")]
-impl<TimeStep> Plugin for TimeRunnerSystemsPlugin<TimeStep>
+impl<TimeCtx> Plugin for TimeRunnerSystemsPlugin<TimeCtx>
 where
-    TimeStep: Default + Send + Sync + 'static,
+    TimeCtx: Default + Send + Sync + 'static,
 {
     fn build(&self, app: &mut App) {
         app.configure_sets(
@@ -143,8 +143,8 @@ where
         .add_systems(
             self.schedule,
             (
-                tick_time_runner_system::<TimeStep>.in_set(TimeRunnerSet::TickTimer),
-                time_runner_system::<TimeStep>.in_set(TimeRunnerSet::Progress),
+                tick_time_runner_system::<TimeCtx>.in_set(TimeRunnerSet::TickTimer),
+                time_runner_system::<TimeCtx>.in_set(TimeRunnerSet::Progress),
             ),
         );
     }
@@ -169,7 +169,7 @@ pub struct TimeRunnerDebugInfo {
 
 /// Debugs TimeRunner related issues
 ///
-/// By default, this print warnings for missing [`TimeStepMarker<T>`] where `T` is:
+/// By default, this print warnings for missing [`TimeContext<T>`] where `T` is:
 /// - `()` (The default time step),
 /// - [`bevy_time::Fixed`],
 /// - [`bevy_time::Real`] and
@@ -198,13 +198,13 @@ impl Default for TimeRunnerDebugPlugin {
 #[cfg(feature = "debug")]
 impl TimeRunnerDebugPlugin {
     /// Enables a [`bevy_time::Time`]'s specific context to be checked.
-    pub fn add_time_step<TimeStep>(&mut self)
+    pub fn add_time_step<TimeCtx>(&mut self)
     where
-        TimeStep: Default + Send + Sync + 'static,
+        TimeCtx: Default + Send + Sync + 'static,
     {
         self.time_step_markers.push((
-            TypeId::of::<TimeStepMarker<TimeStep>>(),
-            std::any::type_name::<TimeStepMarker<TimeStep>>(),
+            TypeId::of::<TimeContext<TimeCtx>>(),
+            std::any::type_name::<TimeContext<TimeCtx>>(),
         ));
     }
 }
@@ -217,10 +217,10 @@ impl Plugin for TimeRunnerDebugPlugin {
     fn build(&self, app: &mut App) {
         let mut info = TimeRunnerDebugInfo::default();
         let world_mut = app.world_mut();
-        world_mut.register_component::<TimeStepMarker<()>>();
-        world_mut.register_component::<TimeStepMarker<bevy_time::Fixed>>();
-        world_mut.register_component::<TimeStepMarker<bevy_time::Real>>();
-        world_mut.register_component::<TimeStepMarker<bevy_time::Virtual>>();
+        world_mut.register_component::<TimeContext<()>>();
+        world_mut.register_component::<TimeContext<bevy_time::Fixed>>();
+        world_mut.register_component::<TimeContext<bevy_time::Real>>();
+        world_mut.register_component::<TimeContext<bevy_time::Virtual>>();
         for (type_id, type_name) in &self.time_step_markers {
             let Some(component_id) = app.world().components().get_id(*type_id) else {
                 panic!(

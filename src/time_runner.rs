@@ -88,19 +88,19 @@ fn on_time_runner_added(
     let has_any_time_step = debug_info.time_steps.iter().any(|t| entity.contains_id(*t));
     if !has_any_time_step {
         warn!(
-            "TimeRunner {} does not have any `TimeStepMarker<T>` component. This may cause problems. If this warning is false, you can disable it by removing TimeRunnerDebugPlugin or check its documentation.",
+            "TimeRunner {} does not have any `TimeContext<T>` component. This may cause problems. If this warning is false, you can disable it by removing TimeRunnerDebugPlugin or check its documentation.",
             hook_context.entity
         );
     }
 }
 
-/// A marker component attached to TimeRunner to make the time delta applied to it based on a specific TimeStep
+/// A marker component attached to TimeRunner to make the time delta applied to it based on a specific TimeCtx
 #[derive(Debug, Clone, PartialEq, Component, Default)]
-pub struct TimeStepMarker<TimeStep>
+pub struct TimeContext<TimeCtx>
 where
-    TimeStep: Default + Send + Sync + 'static,
+    TimeCtx: Default + Send + Sync + 'static,
 {
-    _time_step: PhantomData<TimeStep>,
+    _time_step: PhantomData<TimeCtx>,
 }
 
 impl TimeRunner {
@@ -442,13 +442,13 @@ impl TimeRunnerEnded {
 }
 
 /// Tick time runner then send [`TimeRunnerEnded`] event if qualified for.
-pub fn tick_time_runner_system<TimeStep>(
+pub fn tick_time_runner_system<TimeCtx>(
     mut commands: Commands,
-    time: Res<Time<TimeStep>>,
-    mut q_time_runner: Query<(Entity, &mut TimeRunner), With<TimeStepMarker<TimeStep>>>,
+    time: Res<Time<TimeCtx>>,
+    mut q_time_runner: Query<(Entity, &mut TimeRunner), With<TimeContext<TimeCtx>>>,
     mut ended_writer: MessageWriter<TimeRunnerEnded>,
 ) where
-    TimeStep: Default + Send + Sync + 'static,
+    TimeCtx: Default + Send + Sync + 'static,
 {
     let delta = time.delta_secs();
     q_time_runner
@@ -485,20 +485,20 @@ pub fn tick_time_runner_system<TimeStep>(
 
 /// System for updating any [`TimeSpan`] with the correct [`TimeSpanProgress`]
 /// by their runner
-pub fn time_runner_system<TimeStep>(
+pub fn time_runner_system<TimeCtx>(
     mut commands: Commands,
     mut q_runner: Query<
         (Entity, &mut TimeRunner, Option<&Children>),
-        (Without<SkipTimeRunner>, With<TimeStepMarker<TimeStep>>),
+        (Without<SkipTimeRunner>, With<TimeContext<TimeCtx>>),
     >,
     mut q_span: Query<(Entity, Option<&mut TimeSpanProgress>, &TimeSpan)>,
     q_added_skip: Query<
         (Entity, &TimeRunner, Option<&Children>),
-        (Added<SkipTimeRunner>, With<TimeStepMarker<TimeStep>>),
+        (Added<SkipTimeRunner>, With<TimeContext<TimeCtx>>),
     >,
     mut runner_just_completed: Local<Vec<Entity>>,
 ) where
-    TimeStep: Default + Send + Sync + 'static,
+    TimeCtx: Default + Send + Sync + 'static,
 {
     use DurationQuotient::*;
     use RepeatStyle::*;
@@ -1015,7 +1015,7 @@ mod test {
         time_runner.tick(10.);
         let mut time_span_id = Entity::PLACEHOLDER;
         world
-            .spawn((time_runner, TimeStepMarker::<()>::default()))
+            .spawn((time_runner, TimeContext::<()>::default()))
             .with_children(|c| {
                 time_span_id = c
                     .spawn(TimeSpan::try_from(secs(4.)..secs(6.)).unwrap())
@@ -1048,7 +1048,7 @@ mod test {
         time_runner.tick(4.);
         let mut time_span_id = Entity::PLACEHOLDER;
         world
-            .spawn((time_runner, TimeStepMarker::<()>::default()))
+            .spawn((time_runner, TimeContext::<()>::default()))
             .with_children(|c| {
                 time_span_id = c
                     .spawn(TimeSpan::try_from(secs(2.)..=secs(2.)).unwrap())
@@ -1085,7 +1085,7 @@ mod test {
         let world = app.world_mut();
 
         println!("This should have no warning");
-        world.spawn((TimeRunner::default(), TimeStepMarker::<()>::default())); // Expected no warning here.
+        world.spawn((TimeRunner::default(), TimeContext::<()>::default())); // Expected no warning here.
 
         println!("This should have warnings");
         world.spawn(TimeRunner::default()); // Expected warning here.
