@@ -58,7 +58,7 @@ pub use time_span::*;
 #[derive(Debug)]
 pub struct TimeRunnerSystemsPlugin<TimeCtx = ()>
 where
-    TimeCtx: Default + Clone + Send + Sync + 'static,
+    TimeCtx: Default + Send + Sync + 'static,
 {
     /// All systems will be put to this schedule
     pub schedule: InternedScheduleLabel,
@@ -69,7 +69,7 @@ where
 #[cfg(feature = "bevy_app")]
 impl<TimeCtx> TimeRunnerSystemsPlugin<TimeCtx>
 where
-    TimeCtx: Default + Clone + Send + Sync + 'static,
+    TimeCtx: Default + Send + Sync + 'static,
 {
     /// Initializes the plugin to run on the specified schedule
     pub fn from_schedule_intern(schedule: InternedScheduleLabel) -> Self {
@@ -134,7 +134,7 @@ impl Plugin for TimeRunnerPlugin {
 #[cfg(feature = "bevy_app")]
 impl<TimeCtx> Plugin for TimeRunnerSystemsPlugin<TimeCtx>
 where
-    TimeCtx: Default + Clone + Send + Sync + 'static,
+    TimeCtx: Default + Send + Sync + 'static,
 {
     fn build(&self, app: &mut App) {
         app.configure_sets(
@@ -204,7 +204,7 @@ impl TimeRunnerDebugPlugin {
     /// Enables a [`bevy_time::Time`]'s specific context to be checked.
     pub fn add_time_step<TimeCtx>(&mut self)
     where
-        TimeCtx: Default + Clone + Send + Sync + 'static,
+        TimeCtx: Default + Send + Sync + 'static,
     {
         self.time_step_markers.push((
             TypeId::of::<TimeContext<TimeCtx>>(),
