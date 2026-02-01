@@ -213,6 +213,7 @@ impl TimeRunnerDebugPlugin {
 }
 
 #[cfg(feature = "debug")]
+#[cfg(feature = "bevy_app")]
 impl Plugin for TimeRunnerDebugPlugin {
     /// # Panics
     ///

@@ -452,7 +452,7 @@ pub fn tag_time_runner_children_with_context<TimeCtx>(
         for child_entity in children.iter() {
             commands
                 .entity(child_entity)
-                .try_insert((*time_context).clone());
+                .try_insert(time_context.clone());
         }
     }
 }
