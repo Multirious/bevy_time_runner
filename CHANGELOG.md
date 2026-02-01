@@ -10,6 +10,7 @@
   - Add `TimeContext<TimeCtx>` component to mark the time step each time runner uses
   - Automatically tag children of newly-created time runners on `TimeRunnerSet::Tagging`
   - Tick each time runner, send events and register system sets on the provided schedule and time step
+  - Add feature `debug` that logs warnings on missing `TimeContext<TimeCtx>` tags when enabled
 
 ## v0.5.2 - 2025-10-6
 - Fix documentation
