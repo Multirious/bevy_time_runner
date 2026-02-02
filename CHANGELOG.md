@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased - XXXX-XX-XX
+- Breaking:
+  - Add `enable_debug` field to `TimeRunnerPlugin`, see last bullet
 - Migrate to bevy 0.18
 - Update flake
   - Use latest instead of a version for stableRust in flake.nix
@@ -8,6 +10,7 @@
   - Remove flake-utils dependency from flake.nix
 - You may now register `TimeRunnerSystemsPlugin<TimeCtx>` with a schedule of your choice (using `from_schedule_intern`) to enable creation, ticking and management of time runners of different time steps
   - Add `TimeContext<TimeCtx>` component to mark the time step each time runner uses
+    - The crate's systems now expect time runners to have this component
   - Automatically tag children of newly-created time runners on `TimeRunnerSet::Tagging`
   - Tick each time runner, send events and register system sets on the provided schedule and time step
   - Add feature `debug` that logs warnings on missing `TimeContext<TimeCtx>` tags when enabled
