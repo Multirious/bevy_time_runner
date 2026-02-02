@@ -2,18 +2,21 @@
 
 ## Unreleased - XXXX-XX-XX
 - Breaking:
-  - Add `enable_debug` field to `TimeRunnerPlugin`, see last bullet
-- Migrate to bevy 0.18
-- Update flake
+  - Add `enable_debug` field to `TimeRunnerPlugin` by [#15](https://github.com/Multirious/bevy_time_runner/pull/15)
+
+- Migrate to bevy 0.18 by [#16](https://github.com/Multirious/bevy_time_runner/pull/16)
+- Update flake by [#17](https://github.com/Multirious/bevy_time_runner/pull/17)
   - Use latest instead of a version for stableRust in flake.nix
   - `nix flake update`
   - Remove flake-utils dependency from flake.nix
-- You may now register `TimeRunnerSystemsPlugin<TimeCtx>` with a schedule of your choice (using `from_schedule_intern`) to enable creation, ticking and management of time runners of different time steps
-  - Add `TimeContext<TimeCtx>` component to mark the time step each time runner uses
-    - The crate's systems now expect time runners to have this component
-  - Automatically tag children of newly-created time runners on `TimeRunnerSet::Tagging`
-  - Tick each time runner, send events and register system sets on the provided schedule and time step
-  - Add feature `debug` that logs warnings on missing `TimeContext<TimeCtx>` tags when enabled
+
+- Systems can now be registered in non-default time context. (Virtual, Fixed, and/or Real) See [#15](https://github.com/Multirious/bevy_time_runner/pull/15) for more details.
+
+  Notably:
+  - `TimeRunnerPlugin` which now uses `TimeRunnerSystemsPlugin<()>` by default.
+  - `TimeRunner` is always expected to have the `TimeContext<TimeCtx>` marker component.
+  - `TimeContext<TimeCtx>` is automatically inserted to children of `TimeRunner`.
+  - Add feature `debug`. This adds `TimeRunnerDebugPlugin` which logs warnings on missing `TimeContext<TimeCtx>` marker component when enabled.
 
 ## v0.5.2 - 2025-10-6
 - Fix documentation
