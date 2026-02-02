@@ -18,14 +18,18 @@ bevy_time = { version = "0.18.0", default-features = false }
 bevy_ecs = { version = "0.18.0", default-features = false }
 bevy_app = { version = "0.18.0", default-features = false, optional = true }
 bevy_reflect = { version = "0.18.0", default-features = false, optional = true }
+bevy_log = { version = "0.18.0", default-features = false, optional = true }
 
 [features]
 default = [
   "bevy_reflect",
-  "bevy_app"
+  "bevy_app",
+  "debug"
 ]
 bevy_reflect = [ "dep:bevy_reflect", "bevy_ecs/bevy_reflect", "bevy_app/bevy_reflect" ]
 bevy_app = [ "dep:bevy_app" ]
+
+debug = [ "dep:bevy_log" ]
 
 [dev-dependencies]
 bevy = { version = "0.18.0" , default-features = false }

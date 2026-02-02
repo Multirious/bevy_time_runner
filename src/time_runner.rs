@@ -2,7 +2,7 @@ use bevy_ecs::prelude::*;
 #[cfg(feature = "bevy_reflect")]
 use bevy_reflect::prelude::*;
 use bevy_time::prelude::*;
-use std::{cmp::Ordering, time::Duration};
+use std::{cmp::Ordering, marker::PhantomData, time::Duration};
 
 use crate::time_span::*;
 
@@ -51,6 +51,7 @@ impl TimeRunnerElasped {
 #[derive(Debug, Clone, PartialEq, Component)]
 #[cfg_attr(feature = "bevy_reflect", derive(Reflect))]
 #[cfg_attr(feature = "bevy_reflect", reflect(Component))]
+#[cfg_attr(feature = "debug", component(on_add = on_time_runner_added))]
 pub struct TimeRunner {
     paused: bool,
     /// The current elasped time with other useful information.
@@ -65,9 +66,46 @@ pub struct TimeRunner {
     repeat: Option<(Repeat, RepeatStyle)>,
 }
 
+#[cfg(feature = "debug")]
+fn on_time_runner_added(
+    world: bevy_ecs::world::DeferredWorld<'_>,
+    hook_context: bevy_ecs::lifecycle::HookContext,
+) {
+    use bevy_log::{error, warn};
+    let Some(debug_info) = world.get_resource::<crate::TimeRunnerDebugInfo>() else {
+        return;
+    };
+    let entity = match world.get_entity(hook_context.entity) {
+        Ok(entity) => entity,
+        Err(e) => {
+            error!(
+                "Attempted to get entity {} but got error: {}",
+                hook_context.entity, e
+            );
+            return;
+        }
+    };
+    let has_any_time_step = debug_info.time_steps.iter().any(|t| entity.contains_id(*t));
+    if !has_any_time_step {
+        warn!(
+            "TimeRunner {} does not have any `TimeContext<T>` component. This may cause problems. If this warning is false, you can disable it by removing TimeRunnerDebugPlugin or check its documentation.",
+            hook_context.entity
+        );
+    }
+}
+
+/// A marker component attached to TimeRunner to make the time delta applied to it based on a specific TimeCtx
+#[derive(Debug, Clone, PartialEq, Component, Default)]
+pub struct TimeContext<TimeCtx>
+where
+    TimeCtx: Default + Send + Sync + 'static,
+{
+    _time_step: PhantomData<TimeCtx>,
+}
+
 impl TimeRunner {
     /// Create new [`TimeRunner`] with this duration.
-    pub fn new(length: Duration) -> TimeRunner {
+    pub fn new(length: Duration) -> Self {
         TimeRunner {
             length,
             ..Default::default()
@@ -403,13 +441,31 @@ impl TimeRunnerEnded {
     }
 }
 
-/// Tick time runner then send [`TimeRunnerEnded`] event if qualified for.
-pub fn tick_time_runner_system(
+/// Tag the chilren of newely created [`TimeRunner`]s with their [`TimeContext<TimeCtx>`] to ease querying
+pub fn tag_time_runner_children_with_context<TimeCtx>(
+    newly_created_time_runners: Query<&Children, (Added<TimeRunner>, With<TimeContext<TimeCtx>>)>,
     mut commands: Commands,
-    time: Res<Time>,
-    mut q_time_runner: Query<(Entity, &mut TimeRunner)>,
+) where
+    TimeCtx: Default + Send + Sync + 'static,
+{
+    for children in &newly_created_time_runners {
+        for child_entity in children.iter() {
+            commands
+                .entity(child_entity)
+                .try_insert(TimeContext::<TimeCtx>::default());
+        }
+    }
+}
+
+/// Tick time runner then send [`TimeRunnerEnded`] event if qualified for.
+pub fn tick_time_runner_system<TimeCtx>(
+    mut commands: Commands,
+    time: Res<Time<TimeCtx>>,
+    mut q_time_runner: Query<(Entity, &mut TimeRunner), With<TimeContext<TimeCtx>>>,
     mut ended_writer: MessageWriter<TimeRunnerEnded>,
-) {
+) where
+    TimeCtx: Default + Send + Sync + 'static,
+{
     let delta = time.delta_secs();
     q_time_runner
         .iter_mut()
@@ -445,13 +501,21 @@ pub fn tick_time_runner_system(
 
 /// System for updating any [`TimeSpan`] with the correct [`TimeSpanProgress`]
 /// by their runner
-pub fn time_runner_system(
+pub fn time_runner_system<TimeCtx>(
     mut commands: Commands,
-    mut q_runner: Query<(Entity, &mut TimeRunner, Option<&Children>), Without<SkipTimeRunner>>,
+    mut q_runner: Query<
+        (Entity, &mut TimeRunner, Option<&Children>),
+        (Without<SkipTimeRunner>, With<TimeContext<TimeCtx>>),
+    >,
     mut q_span: Query<(Entity, Option<&mut TimeSpanProgress>, &TimeSpan)>,
-    q_added_skip: Query<(Entity, &TimeRunner, Option<&Children>), Added<SkipTimeRunner>>,
+    q_added_skip: Query<
+        (Entity, &TimeRunner, Option<&Children>),
+        (Added<SkipTimeRunner>, With<TimeContext<TimeCtx>>),
+    >,
     mut runner_just_completed: Local<Vec<Entity>>,
-) {
+) where
+    TimeCtx: Default + Send + Sync + 'static,
+{
     use DurationQuotient::*;
     use RepeatStyle::*;
     use TimeDirection::*;
@@ -640,7 +704,7 @@ pub fn time_runner_system(
             | (Forward, Before, After, Some(WrapAround)) // 2 now, max
             | (Forward, Inside, Inside, Some(WrapAround)) // 1&2 now
             | (Forward, Inside, After, Some(WrapAround)) // 2 now, max
-            | (Forward, After, Inside, Some(WrapAround)) // 1 now 
+            | (Forward, After, Inside, Some(WrapAround)) // 1 now
             | (Forward, After, After, Some(WrapAround)) // 1&2 now, max
             // | (Forward, After, Before, Some(WrapAround)) // 1
                 => {
@@ -656,7 +720,7 @@ pub fn time_runner_system(
                     Some(UseTime::Min)
                 },
             | (Backward, Before, Before, Some(WrapAround)) // 1&2 now, min
-            | (Backward, Before, Inside, Some(WrapAround)) // 1 now 
+            | (Backward, Before, Inside, Some(WrapAround)) // 1 now
             | (Backward, Inside, Before, Some(WrapAround)) // 2 now, min
             | (Backward, Inside, Inside, Some(WrapAround)) // 1&2 now
             | (Backward, After, Before, Some(WrapAround)) // 2 now, min
@@ -966,13 +1030,15 @@ mod test {
         let mut time_runner = TimeRunner::new(secs(10.));
         time_runner.tick(10.);
         let mut time_span_id = Entity::PLACEHOLDER;
-        world.spawn(time_runner).with_children(|c| {
-            time_span_id = c
-                .spawn(TimeSpan::try_from(secs(4.)..secs(6.)).unwrap())
-                .id();
-        });
+        world
+            .spawn((time_runner, TimeContext::<()>::default()))
+            .with_children(|c| {
+                time_span_id = c
+                    .spawn(TimeSpan::try_from(secs(4.)..secs(6.)).unwrap())
+                    .id();
+            });
 
-        world.run_system_once(time_runner_system).unwrap();
+        world.run_system_once(time_runner_system::<()>).unwrap();
 
         let progress = world
             .entity(time_span_id)
@@ -997,13 +1063,15 @@ mod test {
         let mut time_runner = TimeRunner::new(secs(4.));
         time_runner.tick(4.);
         let mut time_span_id = Entity::PLACEHOLDER;
-        world.spawn(time_runner).with_children(|c| {
-            time_span_id = c
-                .spawn(TimeSpan::try_from(secs(2.)..=secs(2.)).unwrap())
-                .id();
-        });
+        world
+            .spawn((time_runner, TimeContext::<()>::default()))
+            .with_children(|c| {
+                time_span_id = c
+                    .spawn(TimeSpan::try_from(secs(2.)..=secs(2.)).unwrap())
+                    .id();
+            });
 
-        world.run_system_once(time_runner_system).unwrap();
+        world.run_system_once(time_runner_system::<()>).unwrap();
 
         let progress = world
             .entity(time_span_id)
@@ -1019,5 +1087,23 @@ mod test {
                 previous: -2.,
             }
         );
+    }
+
+    #[cfg(feature = "debug")]
+    #[test]
+    #[ignore = "This test has to be checked manually for warning"]
+    fn time_runner_with_no_time_steps_warning() {
+        let mut app = bevy_app::App::new();
+        app.add_plugins((
+            crate::TimeRunnerDebugPlugin::default(),
+            bevy_log::LogPlugin::default(),
+        ));
+        let world = app.world_mut();
+
+        println!("This should have no warning");
+        world.spawn((TimeRunner::default(), TimeContext::<()>::default())); // Expected no warning here.
+
+        println!("This should have warnings");
+        world.spawn(TimeRunner::default()); // Expected warning here.
     }
 }
