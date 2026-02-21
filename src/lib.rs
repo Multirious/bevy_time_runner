@@ -53,38 +53,16 @@ use std::marker::PhantomData;
 pub use time_runner::*;
 pub use time_span::*;
 
-/// Add [`time_runner_system::<TimeCtx>`] on schedule
-#[cfg(feature = "bevy_app")]
-#[derive(Debug)]
-pub struct TimeRunnerSystemsPlugin<TimeCtx = ()>
-where
-    TimeCtx: Default + Send + Sync + 'static,
-{
-    /// All systems will be put to this schedule
-    pub schedule: InternedScheduleLabel,
-    /// The time step ticked by (for example, () for regular time or Fixed for fixed time steps)
-    _time_step: PhantomData<TimeCtx>,
-}
-
-#[cfg(feature = "bevy_app")]
-impl<TimeCtx> TimeRunnerSystemsPlugin<TimeCtx>
-where
-    TimeCtx: Default + Send + Sync + 'static,
-{
-    /// Initializes the plugin to run on the specified schedule
-    pub fn from_schedule_intern(schedule: InternedScheduleLabel) -> Self {
-        Self {
-            schedule,
-            _time_step: Default::default(),
-        }
-    }
-}
-
 #[cfg(feature = "bevy_app")]
 /// Registers all types and adds TimeRunnerRegistrationPlugin with default config
-pub struct TimeRunnerPlugin {
-    /// The schedule where the default time runners will be registered (TimerRunner<()>)
+pub struct TimeRunnerPlugin<TimeCtx = ()>
+where
+    TimeCtx: Default + Send + Sync + 'static,
+{
+    /// The schedule on which the time runners would run
     pub schedule: InternedScheduleLabel,
+    /// The time step ticked by (for example, () for regular time or Fixed for fixed time steps)
+    marker: PhantomData<TimeCtx>,
     /// Enables [`TimeRunnerDebugPlugin`] with default configuration.
     /// You may manually insert [`TimeRunnerDebugPlugin`] for custom configuration.
     #[cfg(feature = "debug")]
@@ -92,51 +70,43 @@ pub struct TimeRunnerPlugin {
 }
 
 #[cfg(feature = "bevy_app")]
-impl Default for TimeRunnerPlugin {
+impl<TimeCtx> TimeRunnerPlugin<TimeCtx>
+where
+    TimeCtx: Default + Send + Sync + 'static,
+{
+    /// Initializes the plugin to run on the specified schedule
+    pub fn in_schedule(schedule: InternedScheduleLabel) -> Self {
+        Self {
+            schedule,
+            ..Default::default()
+        }
+    }
+}
+
+#[cfg(feature = "bevy_app")]
+impl<TimeCtx> Default for TimeRunnerPlugin<TimeCtx>
+where
+    TimeCtx: Default + Send + Sync + 'static,
+{
     fn default() -> Self {
         TimeRunnerPlugin {
             schedule: PostUpdate.intern(),
             #[cfg(feature = "debug")]
             enable_debug: true,
+            marker: PhantomData::default(),
         }
     }
 }
 
 #[cfg(feature = "bevy_app")]
-impl Plugin for TimeRunnerPlugin {
-    fn build(&self, app: &mut App) {
-        if !app.is_plugin_added::<TimeRunnerSystemsPlugin<()>>() {
-            app.add_plugins(TimeRunnerSystemsPlugin::<()>::from_schedule_intern(
-                self.schedule,
-            ));
-        }
-        app.add_message::<TimeRunnerEnded>();
-
-        #[cfg(feature = "bevy_reflect")]
-        app.register_type::<TimeRunner>()
-            .register_type::<SkipTimeRunner>()
-            .register_type::<TimeRunnerElasped>()
-            .register_type::<TimeRunnerEnded>()
-            .register_type::<TimeSpan>()
-            .register_type::<TimeSpanProgress>()
-            .register_type::<Repeat>()
-            .register_type::<RepeatStyle>()
-            .register_type::<TimeBound>()
-            .register_type::<TimeDirection>();
-
-        #[cfg(feature = "debug")]
-        if self.enable_debug && !app.is_plugin_added::<TimeRunnerDebugPlugin>() {
-            app.add_plugins(TimeRunnerDebugPlugin::default());
-        }
-    }
-}
-
-#[cfg(feature = "bevy_app")]
-impl<TimeCtx> Plugin for TimeRunnerSystemsPlugin<TimeCtx>
+impl<TimeCtx> Plugin for TimeRunnerPlugin<TimeCtx>
 where
     TimeCtx: Default + Send + Sync + 'static,
 {
     fn build(&self, app: &mut App) {
+        app.add_message::<TimeRunnerEnded>();
+
+        #[cfg(feature = "bevy_app")]
         app.configure_sets(
             self.schedule,
             (
@@ -154,6 +124,23 @@ where
                 time_runner_system::<TimeCtx>.in_set(TimeRunnerSet::Progress),
             ),
         );
+
+        #[cfg(feature = "bevy_reflect")]
+        app.register_type::<TimeRunner>()
+            .register_type::<SkipTimeRunner>()
+            .register_type::<TimeRunnerElasped>()
+            .register_type::<TimeRunnerEnded>()
+            .register_type::<TimeSpan>()
+            .register_type::<TimeSpanProgress>()
+            .register_type::<Repeat>()
+            .register_type::<RepeatStyle>()
+            .register_type::<TimeBound>()
+            .register_type::<TimeDirection>();
+
+        #[cfg(feature = "debug")]
+        if self.enable_debug && !app.is_plugin_added::<TimeRunnerDebugPlugin>() {
+            app.add_plugins(TimeRunnerDebugPlugin::default());
+        }
     }
 }
 
