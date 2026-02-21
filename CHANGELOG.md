@@ -4,7 +4,7 @@
 - Technically breaking (But hidden behind plugin):
   - Add `enable_debug` field to `TimeRunnerPlugin` by [#15](https://github.com/Multirious/bevy_time_runner/pull/15)
   - Add `Tagging` variant to `TimeRunnerSet` by [#15](https://github.com/Multirious/bevy_time_runner/pull/15)
-  - Systems now expected `TimeCtx` generic parameter by [#15](https://github.com/Multirious/bevy_time_runner/pull/15)
+  - `TimeRunnerPlugin` now expected `TimeCtx` generic parameter by [#15](https://github.com/Multirious/bevy_time_runner/pull/15)
 
 - Migrate to bevy 0.18 by [#16](https://github.com/Multirious/bevy_time_runner/pull/16)
 - Update flake by [#17](https://github.com/Multirious/bevy_time_runner/pull/17)
