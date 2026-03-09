@@ -7,12 +7,6 @@
   - Systems now expected `TimeCtx` generic parameter by [#15](https://github.com/Multirious/bevy_time_runner/pull/15)
   - `TimeRunnerPlugin` now expected `TimeCtx` generic parameter by [#19](https://github.com/Multirious/bevy_time_runner/pull/19)
 
-- Migrate to bevy 0.18 by [#16](https://github.com/Multirious/bevy_time_runner/pull/16)
-- Update flake by [#17](https://github.com/Multirious/bevy_time_runner/pull/17)
-  - Use latest instead of a version for stableRust in flake.nix
-  - `nix flake update`
-  - Remove flake-utils dependency from flake.nix
-
 - Systems can now be registered in non-default time context. (Virtual, Fixed, and/or Real) See [#15](https://github.com/Multirious/bevy_time_runner/pull/15) for more details.
 
   Notably:
@@ -20,6 +14,15 @@
   - `TimeRunner` is always expected to have the `TimeContext<TimeCtx>` marker component.
   - `TimeContext<TimeCtx>` is automatically inserted to children of `TimeRunner`.
   - Add feature `debug`. This adds `TimeRunnerDebugPlugin` which logs warnings on missing `TimeContext<TimeCtx>` marker component when enabled.
+
+- Migrate to bevy 0.18 by [#16](https://github.com/Multirious/bevy_time_runner/pull/16)
+
+Internal:
+- Update issue and PR template by [#21](https://github.com/Multirious/bevy_time_runner/pull/21)
+- Update flake by [#17](https://github.com/Multirious/bevy_time_runner/pull/17)
+  - Use latest instead of a version for stableRust in flake.nix
+  - `nix flake update`
+  - Remove flake-utils dependency from flake.nix
 
 ## v0.5.2 - 2025-10-6
 - Fix documentation
