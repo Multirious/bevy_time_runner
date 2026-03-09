@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased - XXXX-XX-XX
+
+## v0.6.0 - 2026-03-09
 - Technically breaking (But hidden behind plugin):
   - Add `enable_debug` field to `TimeRunnerPlugin` by [#15](https://github.com/Multirious/bevy_time_runner/pull/15)
   - Add `Tagging` variant to `TimeRunnerSet` by [#15](https://github.com/Multirious/bevy_time_runner/pull/15)
