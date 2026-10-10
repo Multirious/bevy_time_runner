@@ -2,6 +2,8 @@
 
 ## Unreleased - XXXX-XX-XX
 
+- Add workflows to automate updating and releases by [#25](https://github.com/Multirious/bevy_time_runner/pull/25)
+
 ## v0.7.0 - 2026-07-03
 
 - Migrate to bevy 0.19
