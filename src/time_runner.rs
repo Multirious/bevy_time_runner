@@ -1,11 +1,17 @@
 use bevy_ecs::{prelude::*, query::QueryEntityError};
-use bevy_log::error;
 #[cfg(feature = "bevy_reflect")]
 use bevy_reflect::prelude::*;
 use bevy_time::prelude::*;
 use std::{cmp::Ordering, marker::PhantomData, time::Duration};
 
 use crate::time_span::*;
+
+macro_rules! error {
+    ($($tt:tt)*) => {
+        #[cfg(feature = "bevy_log")]
+        bevy_log::error!($($tt)*);
+    };
+}
 
 /// Contains the current elasped time per tick.
 /// Have more informations useful for handling edge cases and retain timing accuracy.
@@ -72,7 +78,6 @@ fn on_time_runner_added(
     world: bevy_ecs::world::DeferredWorld<'_>,
     hook_context: bevy_ecs::lifecycle::HookContext,
 ) {
-    use bevy_log::{error, warn};
     let Some(debug_info) = world.get_resource::<crate::TimeRunnerDebugInfo>() else {
         return;
     };
@@ -88,7 +93,7 @@ fn on_time_runner_added(
     };
     let has_any_time_step = debug_info.time_steps.iter().any(|t| entity.contains_id(*t));
     if !has_any_time_step {
-        warn!(
+        bevy_log::warn!(
             "TimeRunner {} does not have any `TimeContext<T>` component. This may cause problems. If this warning is false, you can disable it by removing TimeRunnerDebugPlugin or check its documentation.",
             hook_context.entity
         );
