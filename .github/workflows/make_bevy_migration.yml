@@ -10,7 +10,7 @@ on:
         default: 0.1.0
 
 jobs:
-  make-release:
+  make-bevy-migration:
     runs-on: ubuntu-latest
 
     steps:
