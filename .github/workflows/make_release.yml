@@ -25,6 +25,8 @@ jobs:
       with:
         token: ${{ secrets.TOKEN }}
 
+    - uses: dtolnay/rust-toolchain@stable
+
     - name: Setup Git
       run: |
         git config --global user.name 'github-actions[bot]'
@@ -63,6 +65,12 @@ jobs:
           Cargo.toml
         git add Cargo.toml
         git commit -m 'Update Cargo.toml version'
+
+    - name: Update Cargo.lock
+      run: |
+        cargo update
+        git add Cargo.lock
+        git commit -m 'Update Cargo.lock'
 
     - name: Create Pull Request
       env:
