@@ -1,4 +1,4 @@
-use bevy_ecs::prelude::*;
+use bevy_ecs::{prelude::*, query::QueryEntityError};
 use bevy_log::error;
 #[cfg(feature = "bevy_reflect")]
 use bevy_reflect::prelude::*;
@@ -539,6 +539,7 @@ pub fn time_runner_system<TimeCtx>(
         while let Some(span) = spans.fetch_next() {
             let (span_entity, _, _) = match span {
                 Ok(span) => span,
+                Err(QueryEntityError::QueryDoesNotMatch(_, _)) => continue,
                 Err(e) => {
                     error!(
                         "Cannot fetch span in completed runners to remove TimeSpanProgress: {e}"
@@ -562,6 +563,7 @@ pub fn time_runner_system<TimeCtx>(
             while let Some(span) = spans.fetch_next() {
                 let (span_entity, _, _) = match span {
                     Ok(span) => span,
+                    Err(QueryEntityError::QueryDoesNotMatch(_, _)) => continue,
                     Err(e) => {
                         error!(
                             "Cannot fetch span in skipped runners to remove TimeSpanProgress: {e}"
@@ -599,6 +601,7 @@ pub fn time_runner_system<TimeCtx>(
             while let Some(span) = spans.fetch_next() {
                 let (span_entity, time_span_progress, span) = match span {
                     Ok(span) => span,
+                    Err(QueryEntityError::QueryDoesNotMatch(_, _)) => continue,
                     Err(e) => {
                         error!("Cannot fetch span to update: {e}");
                         continue;
