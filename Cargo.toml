@@ -6,7 +6,6 @@ edition = "2024"
 authors = [ "Multirious" ]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Multirious/bevy_time_runner"
-homepage = "https://github.com/Multirious/bevy_time_runner"
 readme = "README.md"
 keywords = [ "bevy", "time" , "timer"]
 categories = [ "game-development" ]

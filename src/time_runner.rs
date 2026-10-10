@@ -228,17 +228,17 @@ impl TimeRunner {
 
         let repeat_count = p.floor() as i32;
         let repeat_style = 'a: {
-            if let Some(r) = self.repeat.as_mut() {
-                if repeat_count != 0 {
-                    let repeat_count = if self.direction == TimeDirection::Forward {
-                        repeat_count
-                    } else {
-                        -repeat_count
-                    };
-                    let advances = r.0.advance_counter_by(repeat_count);
-                    if advances != 0 {
-                        break 'a r.1;
-                    }
+            if let Some(r) = self.repeat.as_mut()
+                && repeat_count != 0
+            {
+                let repeat_count = if self.direction == TimeDirection::Forward {
+                    repeat_count
+                } else {
+                    -repeat_count
+                };
+                let advances = r.0.advance_counter_by(repeat_count);
+                if advances != 0 {
+                    break 'a r.1;
                 }
             }
             if new_elasped > length {
@@ -521,14 +521,14 @@ pub fn time_runner_system<TimeCtx>(
     use TimeDirection::*;
 
     let mut just_completed_runners = q_runner.iter_many(&runner_just_completed);
-    while let Some((runner_entity, runner, children)) = just_completed_runners.fetch_next() {
+    while let Some(Ok((runner_entity, runner, children))) = just_completed_runners.fetch_next() {
         if !runner.is_completed() {
             continue;
         }
 
         let children = children.iter().flat_map(|a| a.into_iter());
         let mut spans = q_span.iter_many_mut([&runner_entity].into_iter().chain(children));
-        while let Some((span_entity, _, _)) = spans.fetch_next() {
+        while let Some(Ok((span_entity, _, _))) = spans.fetch_next() {
             let Ok(mut entity) = commands.get_entity(span_entity) else {
                 continue;
             };
@@ -542,7 +542,7 @@ pub fn time_runner_system<TimeCtx>(
         .for_each(|(runner_entity, _, children)| {
             let children = children.iter().flat_map(|a| a.into_iter());
             let mut spans = q_span.iter_many_mut([&runner_entity].into_iter().chain(children));
-            while let Some((span_entity, _, _)) = spans.fetch_next() {
+            while let Some(Ok((span_entity, _, _))) = spans.fetch_next() {
                 let Ok(mut entity) = commands.get_entity(span_entity) else {
                     continue;
                 };
@@ -570,7 +570,7 @@ pub fn time_runner_system<TimeCtx>(
 
             let children = children.iter().flat_map(|a| a.into_iter());
             let mut spans = q_span.iter_many_mut([&runner_entity].into_iter().chain(children));
-            while let Some((span_entity, time_span_progress, span)) = spans.fetch_next() {
+            while let Some(Ok((span_entity, time_span_progress, span))) = spans.fetch_next() {
                 let now_quotient = span.quotient(runner_elasped_now);
                 let previous_quotient = span.quotient(runner_elasped_previous);
 
