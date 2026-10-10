@@ -797,9 +797,41 @@ pub fn time_runner_system<TimeCtx>(
 
 #[cfg(test)]
 mod test {
+    use bevy_app::App;
     use bevy_ecs::system::RunSystemOnce as _;
+    use bevy_log::{
+        tracing::Subscriber,
+        tracing_subscriber::{Layer, layer::Context},
+    };
+    use std::{cell::Cell, sync::Once};
 
     use super::*;
+
+    thread_local! {
+        static LOG_COUNT: Cell<usize> = const { Cell::new(0) };
+    }
+
+    struct Count;
+    impl<S: Subscriber> Layer<S> for Count {
+        fn on_event(&self, _: &bevy_log::event::Event<'_>, _: Context<'_, S>) {
+            LOG_COUNT.with(|c| c.set(c.get() + 1));
+        }
+    }
+
+    fn log_count() -> usize {
+        LOG_COUNT.get()
+    }
+
+    fn setup_log_plugin(app: &mut App) {
+        static INIT: Once = Once::new();
+        // LogPlugin sets a process-wide subscriber, so only the first app adds it.
+        INIT.call_once(|| {
+            app.add_plugins(bevy_log::LogPlugin {
+                custom_layer: |_| Some(Box::new(Count)),
+                ..Default::default()
+            });
+        });
+    }
 
     fn secs(secs: f32) -> Duration {
         Duration::from_secs_f32(secs)
@@ -1061,7 +1093,9 @@ mod test {
     // There's no test for repeating ones yet and I bet most of them is wrong.
     #[test]
     fn timer_big_tick() {
-        let mut world = World::default();
+        let mut app = bevy_app::App::new();
+        setup_log_plugin(&mut app);
+        let world = app.world_mut();
 
         let mut time_runner = TimeRunner::new(secs(10.));
         time_runner.tick(10.);
@@ -1090,11 +1124,14 @@ mod test {
                 previous: -4.,
             }
         );
+        assert_eq!(log_count(), 0, "should not emit log");
     }
 
     #[test]
     fn timer_zero_length_span() {
-        let mut world = World::default();
+        let mut app = bevy_app::App::new();
+        setup_log_plugin(&mut app);
+        let world = app.world_mut();
 
         let mut time_runner = TimeRunner::new(secs(4.));
         time_runner.tick(4.);
@@ -1123,23 +1160,21 @@ mod test {
                 previous: -2.,
             }
         );
+        assert_eq!(log_count(), 0, "should not emit log");
     }
 
     #[cfg(feature = "debug")]
     #[test]
-    #[ignore = "This test has to be checked manually for warning"]
     fn time_runner_with_no_time_steps_warning() {
         let mut app = bevy_app::App::new();
-        app.add_plugins((
-            crate::TimeRunnerDebugPlugin::default(),
-            bevy_log::LogPlugin::default(),
-        ));
+        app.add_plugins(crate::TimeRunnerDebugPlugin::default());
+        setup_log_plugin(&mut app);
         let world = app.world_mut();
 
-        println!("This should have no warning");
-        world.spawn((TimeRunner::default(), TimeContext::<()>::default())); // Expected no warning here.
+        world.spawn((TimeRunner::default(), TimeContext::<()>::default()));
+        assert_eq!(log_count(), 0, "should not emit log");
 
-        println!("This should have warnings");
-        world.spawn(TimeRunner::default()); // Expected warning here.
+        world.spawn(TimeRunner::default());
+        assert_eq!(log_count(), 1, "should emit log");
     }
 }
