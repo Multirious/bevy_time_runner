@@ -1,4 +1,5 @@
 use bevy_ecs::prelude::*;
+use bevy_log::error;
 #[cfg(feature = "bevy_reflect")]
 use bevy_reflect::prelude::*;
 use bevy_time::prelude::*;
@@ -521,14 +522,30 @@ pub fn time_runner_system<TimeCtx>(
     use TimeDirection::*;
 
     let mut just_completed_runners = q_runner.iter_many(&runner_just_completed);
-    while let Some(Ok((runner_entity, runner, children))) = just_completed_runners.fetch_next() {
+    while let Some(runner) = just_completed_runners.fetch_next() {
+        let (runner_entity, runner, children) = match runner {
+            Ok(runner) => runner,
+            Err(e) => {
+                error!("Cannot fetch next runner: {e}");
+                continue;
+            }
+        };
         if !runner.is_completed() {
             continue;
         }
 
         let children = children.iter().flat_map(|a| a.into_iter());
         let mut spans = q_span.iter_many_mut([&runner_entity].into_iter().chain(children));
-        while let Some(Ok((span_entity, _, _))) = spans.fetch_next() {
+        while let Some(span) = spans.fetch_next() {
+            let (span_entity, _, _) = match span {
+                Ok(span) => span,
+                Err(e) => {
+                    error!(
+                        "Cannot fetch span in completed runners to remove TimeSpanProgress: {e}"
+                    );
+                    continue;
+                }
+            };
             let Ok(mut entity) = commands.get_entity(span_entity) else {
                 continue;
             };
@@ -542,7 +559,16 @@ pub fn time_runner_system<TimeCtx>(
         .for_each(|(runner_entity, _, children)| {
             let children = children.iter().flat_map(|a| a.into_iter());
             let mut spans = q_span.iter_many_mut([&runner_entity].into_iter().chain(children));
-            while let Some(Ok((span_entity, _, _))) = spans.fetch_next() {
+            while let Some(span) = spans.fetch_next() {
+                let (span_entity, _, _) = match span {
+                    Ok(span) => span,
+                    Err(e) => {
+                        error!(
+                            "Cannot fetch span in skipped runners to remove TimeSpanProgress: {e}"
+                        );
+                        continue;
+                    }
+                };
                 let Ok(mut entity) = commands.get_entity(span_entity) else {
                     continue;
                 };
@@ -570,7 +596,14 @@ pub fn time_runner_system<TimeCtx>(
 
             let children = children.iter().flat_map(|a| a.into_iter());
             let mut spans = q_span.iter_many_mut([&runner_entity].into_iter().chain(children));
-            while let Some(Ok((span_entity, time_span_progress, span))) = spans.fetch_next() {
+            while let Some(span) = spans.fetch_next() {
+                let (span_entity, time_span_progress, span) = match span {
+                    Ok(span) => span,
+                    Err(e) => {
+                        error!("Cannot fetch span to update: {e}");
+                        continue;
+                    }
+                };
                 let now_quotient = span.quotient(runner_elasped_now);
                 let previous_quotient = span.quotient(runner_elasped_previous);
 
