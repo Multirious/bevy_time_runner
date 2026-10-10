@@ -6,7 +6,6 @@ edition = "2024"
 authors = [ "Multirious" ]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Multirious/bevy_time_runner"
-homepage = "https://github.com/Multirious/bevy_time_runner"
 readme = "README.md"
 keywords = [ "bevy", "time" , "timer"]
 categories = [ "game-development" ]
@@ -14,11 +13,12 @@ categories = [ "game-development" ]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy_time = { version = "0.19.0", default-features = false }
-bevy_ecs = { version = "0.19.0", default-features = false }
-bevy_app = { version = "0.19.0", default-features = false, optional = true }
-bevy_reflect = { version = "0.19.0", default-features = false, optional = true }
-bevy_log = { version = "0.19.0", default-features = false, optional = true }
+bevy_time = { version = "0.20.0", default-features = false }
+bevy_ecs = { version = "0.20.0", default-features = false }
+bevy_app = { version = "0.20.0", default-features = false, optional = true }
+bevy_reflect = { version = "0.20.0", default-features = false, optional = true }
+bevy_log = { version = "0.20.0", default-features = false, optional = true }
+
 
 [features]
 default = [
@@ -28,12 +28,13 @@ default = [
 ]
 bevy_reflect = [ "dep:bevy_reflect", "bevy_ecs/bevy_reflect", "bevy_app/bevy_reflect" ]
 bevy_app = [ "dep:bevy_app" ]
+bevy_log = [ "dep:bevy_log" ]
 
-debug = [ "dep:bevy_log" ]
+debug = [ "bevy_log" ]
 
 [dev-dependencies]
-bevy = { version = "0.19.0" , default-features = false }
+bevy = { version = "0.20.0", default-features = false }
+bevy_time_runner = { path = ".", features = ["debug"] }
 
 [build-dependencies]
 rustc_version = "0.4.1"
-

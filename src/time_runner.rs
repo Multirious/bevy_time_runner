@@ -1,10 +1,17 @@
-use bevy_ecs::prelude::*;
+use bevy_ecs::{prelude::*, query::QueryEntityError};
 #[cfg(feature = "bevy_reflect")]
 use bevy_reflect::prelude::*;
 use bevy_time::prelude::*;
 use std::{cmp::Ordering, marker::PhantomData, time::Duration};
 
 use crate::time_span::*;
+
+macro_rules! error {
+    ($($tt:tt)*) => {
+        #[cfg(feature = "bevy_log")]
+        bevy_log::error!($($tt)*);
+    };
+}
 
 /// Contains the current elasped time per tick.
 /// Have more informations useful for handling edge cases and retain timing accuracy.
@@ -71,7 +78,6 @@ fn on_time_runner_added(
     world: bevy_ecs::world::DeferredWorld<'_>,
     hook_context: bevy_ecs::lifecycle::HookContext,
 ) {
-    use bevy_log::{error, warn};
     let Some(debug_info) = world.get_resource::<crate::TimeRunnerDebugInfo>() else {
         return;
     };
@@ -87,7 +93,7 @@ fn on_time_runner_added(
     };
     let has_any_time_step = debug_info.time_steps.iter().any(|t| entity.contains_id(*t));
     if !has_any_time_step {
-        warn!(
+        bevy_log::warn!(
             "TimeRunner {} does not have any `TimeContext<T>` component. This may cause problems. If this warning is false, you can disable it by removing TimeRunnerDebugPlugin or check its documentation.",
             hook_context.entity
         );
@@ -228,17 +234,17 @@ impl TimeRunner {
 
         let repeat_count = p.floor() as i32;
         let repeat_style = 'a: {
-            if let Some(r) = self.repeat.as_mut() {
-                if repeat_count != 0 {
-                    let repeat_count = if self.direction == TimeDirection::Forward {
-                        repeat_count
-                    } else {
-                        -repeat_count
-                    };
-                    let advances = r.0.advance_counter_by(repeat_count);
-                    if advances != 0 {
-                        break 'a r.1;
-                    }
+            if let Some(r) = self.repeat.as_mut()
+                && repeat_count != 0
+            {
+                let repeat_count = if self.direction == TimeDirection::Forward {
+                    repeat_count
+                } else {
+                    -repeat_count
+                };
+                let advances = r.0.advance_counter_by(repeat_count);
+                if advances != 0 {
+                    break 'a r.1;
                 }
             }
             if new_elasped > length {
@@ -521,14 +527,31 @@ pub fn time_runner_system<TimeCtx>(
     use TimeDirection::*;
 
     let mut just_completed_runners = q_runner.iter_many(&runner_just_completed);
-    while let Some((runner_entity, runner, children)) = just_completed_runners.fetch_next() {
+    while let Some(runner) = just_completed_runners.fetch_next() {
+        let (runner_entity, runner, children) = match runner {
+            Ok(runner) => runner,
+            Err(e) => {
+                error!("Cannot fetch next runner: {e}");
+                continue;
+            }
+        };
         if !runner.is_completed() {
             continue;
         }
 
         let children = children.iter().flat_map(|a| a.into_iter());
         let mut spans = q_span.iter_many_mut([&runner_entity].into_iter().chain(children));
-        while let Some((span_entity, _, _)) = spans.fetch_next() {
+        while let Some(span) = spans.fetch_next() {
+            let (span_entity, _, _) = match span {
+                Ok(span) => span,
+                Err(QueryEntityError::QueryDoesNotMatch(_, _)) => continue,
+                Err(e) => {
+                    error!(
+                        "Cannot fetch span in completed runners to remove TimeSpanProgress: {e}"
+                    );
+                    continue;
+                }
+            };
             let Ok(mut entity) = commands.get_entity(span_entity) else {
                 continue;
             };
@@ -542,7 +565,17 @@ pub fn time_runner_system<TimeCtx>(
         .for_each(|(runner_entity, _, children)| {
             let children = children.iter().flat_map(|a| a.into_iter());
             let mut spans = q_span.iter_many_mut([&runner_entity].into_iter().chain(children));
-            while let Some((span_entity, _, _)) = spans.fetch_next() {
+            while let Some(span) = spans.fetch_next() {
+                let (span_entity, _, _) = match span {
+                    Ok(span) => span,
+                    Err(QueryEntityError::QueryDoesNotMatch(_, _)) => continue,
+                    Err(e) => {
+                        error!(
+                            "Cannot fetch span in skipped runners to remove TimeSpanProgress: {e}"
+                        );
+                        continue;
+                    }
+                };
                 let Ok(mut entity) = commands.get_entity(span_entity) else {
                     continue;
                 };
@@ -570,7 +603,15 @@ pub fn time_runner_system<TimeCtx>(
 
             let children = children.iter().flat_map(|a| a.into_iter());
             let mut spans = q_span.iter_many_mut([&runner_entity].into_iter().chain(children));
-            while let Some((span_entity, time_span_progress, span)) = spans.fetch_next() {
+            while let Some(span) = spans.fetch_next() {
+                let (span_entity, time_span_progress, span) = match span {
+                    Ok(span) => span,
+                    Err(QueryEntityError::QueryDoesNotMatch(_, _)) => continue,
+                    Err(e) => {
+                        error!("Cannot fetch span to update: {e}");
+                        continue;
+                    }
+                };
                 let now_quotient = span.quotient(runner_elasped_now);
                 let previous_quotient = span.quotient(runner_elasped_previous);
 
@@ -761,9 +802,41 @@ pub fn time_runner_system<TimeCtx>(
 
 #[cfg(test)]
 mod test {
+    use bevy_app::App;
     use bevy_ecs::system::RunSystemOnce as _;
+    use bevy_log::{
+        tracing::Subscriber,
+        tracing_subscriber::{Layer, layer::Context},
+    };
+    use std::{cell::Cell, sync::Once};
 
     use super::*;
+
+    thread_local! {
+        static LOG_COUNT: Cell<usize> = const { Cell::new(0) };
+    }
+
+    struct Count;
+    impl<S: Subscriber> Layer<S> for Count {
+        fn on_event(&self, _: &bevy_log::event::Event<'_>, _: Context<'_, S>) {
+            LOG_COUNT.with(|c| c.set(c.get() + 1));
+        }
+    }
+
+    fn log_count() -> usize {
+        LOG_COUNT.get()
+    }
+
+    fn setup_log_plugin(app: &mut App) {
+        static INIT: Once = Once::new();
+        // LogPlugin sets a process-wide subscriber, so only the first app adds it.
+        INIT.call_once(|| {
+            app.add_plugins(bevy_log::LogPlugin {
+                custom_layer: |_| Some(Box::new(Count)),
+                ..Default::default()
+            });
+        });
+    }
 
     fn secs(secs: f32) -> Duration {
         Duration::from_secs_f32(secs)
@@ -1025,7 +1098,9 @@ mod test {
     // There's no test for repeating ones yet and I bet most of them is wrong.
     #[test]
     fn timer_big_tick() {
-        let mut world = World::default();
+        let mut app = bevy_app::App::new();
+        setup_log_plugin(&mut app);
+        let world = app.world_mut();
 
         let mut time_runner = TimeRunner::new(secs(10.));
         time_runner.tick(10.);
@@ -1054,11 +1129,14 @@ mod test {
                 previous: -4.,
             }
         );
+        assert_eq!(log_count(), 0, "should not emit log");
     }
 
     #[test]
     fn timer_zero_length_span() {
-        let mut world = World::default();
+        let mut app = bevy_app::App::new();
+        setup_log_plugin(&mut app);
+        let world = app.world_mut();
 
         let mut time_runner = TimeRunner::new(secs(4.));
         time_runner.tick(4.);
@@ -1087,23 +1165,21 @@ mod test {
                 previous: -2.,
             }
         );
+        assert_eq!(log_count(), 0, "should not emit log");
     }
 
     #[cfg(feature = "debug")]
     #[test]
-    #[ignore = "This test has to be checked manually for warning"]
     fn time_runner_with_no_time_steps_warning() {
         let mut app = bevy_app::App::new();
-        app.add_plugins((
-            crate::TimeRunnerDebugPlugin::default(),
-            bevy_log::LogPlugin::default(),
-        ));
+        app.add_plugins(crate::TimeRunnerDebugPlugin::default());
+        setup_log_plugin(&mut app);
         let world = app.world_mut();
 
-        println!("This should have no warning");
-        world.spawn((TimeRunner::default(), TimeContext::<()>::default())); // Expected no warning here.
+        world.spawn((TimeRunner::default(), TimeContext::<()>::default()));
+        assert_eq!(log_count(), 0, "should not emit log");
 
-        println!("This should have warnings");
-        world.spawn(TimeRunner::default()); // Expected warning here.
+        world.spawn(TimeRunner::default());
+        assert_eq!(log_count(), 1, "should emit log");
     }
 }
