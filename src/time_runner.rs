@@ -1,4 +1,4 @@
-use bevy_ecs::{prelude::*, query::QueryEntityError};
+use bevy_ecs::{entity::EntityNotSpawnedError, prelude::*, query::QueryEntityError};
 #[cfg(feature = "bevy_reflect")]
 use bevy_reflect::prelude::*;
 use bevy_time::prelude::*;
@@ -530,6 +530,7 @@ pub fn time_runner_system<TimeCtx>(
     while let Some(runner) = just_completed_runners.fetch_next() {
         let (runner_entity, runner, children) = match runner {
             Ok(runner) => runner,
+            Err(QueryEntityError::NotSpawned(EntityNotSpawnedError::Invalid(_))) => continue,
             Err(e) => {
                 error!("Cannot fetch next runner: {e}");
                 continue;
