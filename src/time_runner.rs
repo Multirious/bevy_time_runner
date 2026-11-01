@@ -531,6 +531,7 @@ pub fn time_runner_system<TimeCtx>(
         let (runner_entity, runner, children) = match runner {
             Ok(runner) => runner,
             Err(QueryEntityError::NotSpawned(EntityNotSpawnedError::Invalid(_))) => continue,
+            Err(QueryEntityError::QueryDoesNotMatch(_, _)) => continue,
             Err(e) => {
                 error!("Cannot fetch next runner: {e}");
                 continue;
