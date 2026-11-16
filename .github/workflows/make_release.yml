@@ -16,14 +16,15 @@ on:
         type: string
         default: 0.1
 
+permissions:
+  contents: write
+
 jobs:
   make-release:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v7
-      with:
-        token: ${{ secrets.TOKEN }}
 
     - uses: dtolnay/rust-toolchain@stable
 
