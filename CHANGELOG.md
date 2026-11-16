@@ -2,6 +2,8 @@
 
 ## Unreleased - XXXX-XX-XX
 
+- Fix time_runner_system logging error on despawned entity by [#28](https://github.com/Multirious/bevy_time_runner/pull/28)
+
 ## v0.8.0 - 2026-10-10
 
 - Migrate to Bevy v0.20.0 by [#26](https://github.com/Multirious/bevy_time_runner/pull/26)
