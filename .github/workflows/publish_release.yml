@@ -3,6 +3,9 @@ name: Publish Release
 on:
   push:
 
+permissions:
+  contents: write
+
 jobs:
   publish-release:
     runs-on: ubuntu-latest
@@ -52,7 +55,7 @@ jobs:
 
     - name: Create Release
       env:
-        GH_TOKEN: ${{ secrets.TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         current_changelog="$(
           awk "/## ${RELEASE_VERSION}/{flag=1; next} /## /{flag=0} flag" \
