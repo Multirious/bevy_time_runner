@@ -23,9 +23,6 @@ jobs:
   make-release:
     runs-on: ubuntu-latest
 
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     steps:
     - uses: actions/checkout@v7
 
@@ -78,7 +75,7 @@ jobs:
 
     - name: Create Pull Request
       env:
-        GH_TOKEN: ${{ secrets.TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BODY: |
           # Objective
           Make release for v${{ inputs.version }}
