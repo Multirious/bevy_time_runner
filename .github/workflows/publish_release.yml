@@ -13,8 +13,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
-      with:
-        token: ${{ secrets.TOKEN }}
 
     - uses: actions/cache@v6
       with:
