@@ -3,11 +3,14 @@ name: CI
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'src/**'
+      - 'Cargo.lock'
   pull_request:
     branches: [ "main" ]
-  paths:
-    - 'src/**'
-    - 'Cargo.lock'
+    paths:
+      - 'src/**'
+      - 'Cargo.lock'
 
 env:
   CARGO_TERM_COLOR: always
